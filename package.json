@@ -6,10 +6,12 @@
     "@clerk/clerk-react": "^5.21.2",
     "axios": "^1.7.9",
     "cra-template": "1.2.0",
+    "js-cookie": "^3.0.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-facebook-login": "^4.1.1",
     "react-icons": "^5.4.0",
+    "react-router-dom": "^7.1.1",
     "react-scripts": "5.0.1",
     "react-social-login": "^3.4.17"
   },
