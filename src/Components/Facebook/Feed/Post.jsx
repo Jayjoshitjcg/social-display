@@ -3,8 +3,6 @@ import React, { useEffect, useState } from 'react';
 const Post = ({ post }) => {
     const [likes, setLikes] = useState(0);
 
-    console.log("Single post==>", post)
-
     // const { posts } = useContext(AppContext)
 
     const handleLike = () => {

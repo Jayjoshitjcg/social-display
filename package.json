@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@amraneze/react-instagram-login": "^4.0.0",
     "@clerk/clerk-react": "^5.21.2",
     "axios": "^1.7.9",
     "cra-template": "1.2.0",
