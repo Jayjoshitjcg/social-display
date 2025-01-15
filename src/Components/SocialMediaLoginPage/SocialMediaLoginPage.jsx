@@ -1,9 +1,9 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 import { FaFacebook, FaInstagram, FaTwitter, FaGoogle, FaLinkedin, FaGithub } from 'react-icons/fa';
 import FacebookLogin from 'react-facebook-login';
 import { InstagramLogin } from '@amraneze/react-instagram-login';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AppContext } from '../../Context/AppContext';
 
 const SocialMediaLoginPage = () => {
@@ -12,6 +12,7 @@ const SocialMediaLoginPage = () => {
 
     const [selectedPlatform, setSelectedPlatform] = useState(null);
     const navigate = useNavigate()
+    const location = useLocation(); // Correct usage of useLocation hook
 
     const handleLogin = (platform) => {
         setSelectedPlatform(platform);
@@ -51,56 +52,16 @@ const SocialMediaLoginPage = () => {
             .catch((error) => console.error('Error posting to page:', error));
     };
 
-    //Instagram Login
-
-    const instagramClientId = '1557520368213094'; // Replace with your actual Instagram client ID
-    const redirectUri = 'http://localhost:3000/'; // Replace with your actual redirect URI
-    const scope = 'user_profile,user_media'; // Define the permissions you need
-
-
     const handleInstagramLogin = () => {
-        const instagramAuthUrl = `https://api.instagram.com/oauth/authorize?client_id=${instagramClientId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code`;
+        const clientId = '1985482418624364';
+        const redirectUri = `${window.location.origin}/instagram-callback`;
+        const scope = 'instagram_basic,instagram_manage_insights';
 
-        window.location.href = instagramAuthUrl; // Redirect to Instagram login page
+        const authUrl = `https://www.facebook.com/v17.0/dialog/oauth?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code`;
+
+        window.open(authUrl, '_blank', 'width=600,height=700');
     };
 
-    const handleInstagramResponse = async (code) => {
-        // Exchange the code for an access token
-        const tokenUrl = 'https://api.instagram.com/oauth/access_token';
-        const params = new URLSearchParams();
-        params.append('client_id', instagramClientId);
-        params.append('client_secret', 'ae92d64d6eb6e891d5a3a0a27fe0b6cb'); // Replace with your client secret
-        params.append('grant_type', 'authorization_code');
-        params.append('redirect_uri', redirectUri);
-        params.append('code', code);
-
-        const response = await fetch(tokenUrl, {
-            method: 'POST',
-            body: params,
-        });
-
-        const data = await response.json();
-        if (data.access_token) {
-            setAccessToken(data.access_token);
-            setUser(data); // You can store user data as per your requirement
-            navigate('/home');
-        } else {
-            console.error('Instagram login failed', data);
-        }
-    };
-
-    const getUrlParameter = (name) => {
-        const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get(name);
-    };
-
-    // Handle the Instagram response after redirect
-    React.useEffect(() => {
-        const code = getUrlParameter('code');
-        if (code) {
-            handleInstagramResponse(code);
-        }
-    }, []);
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -112,6 +73,7 @@ const SocialMediaLoginPage = () => {
                     <h1 className='text-[0.6rem] text-gray-800'>You can login with facebook credentials only to get access</h1>
                 </div>
                 <div className='flex items-center gap-5'>
+
                     <FacebookLogin
                         appId="1627558811169298"
                         autoLoad={false}
@@ -127,13 +89,10 @@ const SocialMediaLoginPage = () => {
                         )}
                     />
 
-                    <div
-                        onClick={handleInstagramLogin}
-                        className={`flex flex-col items-center justify-center w-24 h-24 rounded-xl cursor-pointer transform transition-all hover:scale-105 bg-pink-500 text-white ${selectedPlatform === 'Instagram' ? 'ring-4 ring-offset-2 ring-blue-300' : ''
-                            }`}
-                    >
-                        <FaInstagram className="text-3xl mb-2" />
-                        <span className="text-xs font-medium">Instagram</span>
+                    {/* Instagram Login */}
+                    <div onClick={handleInstagramLogin} className="flex flex-col items-center bg-pink-400 text-white cursor-pointer rounded-lg p-2">
+                        <FaInstagram className="text-4xl text-white" />
+                        <span>Instagram</span>
                     </div>
 
                     {/*<div
