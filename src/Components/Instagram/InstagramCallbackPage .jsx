@@ -13,20 +13,13 @@ const InstagramCallbackPage = () => {
             const code = urlParams.get('code');
 
             if (code) {
-                console.log("Code===>", code)
                 try {
-                    console.log("<======Inside Try block======>")
-                    const clientId = '1985482418624364';
-                    const clientSecret = '4398a6f0dcb857ab8ecc766206e019ef';
-                    const redirectUri = `${window.location.origin}/instagram-callback`;
-
-                    const response = await fetch('https://graph.facebook.com/v17.0/oauth/access_token', {
+                    const response = await fetch('http://localhost:5000/exchange-token', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, code }),
+                        body: JSON.stringify({ code }),
                     });
 
-                    console.log("response ====>", response)
                     const data = await response.json();
                     if (data.access_token) {
                         setInstaAccessToken(data.access_token);
@@ -45,6 +38,7 @@ const InstagramCallbackPage = () => {
 
             setLoading(false);
         };
+
 
         fetchAccessToken();
     }, [navigate, setInstaAccessToken]);

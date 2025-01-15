@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 import { FaFacebook, FaInstagram, FaTwitter, FaGoogle, FaLinkedin, FaGithub } from 'react-icons/fa';
 import FacebookLogin from 'react-facebook-login';
-import { InstagramLogin } from '@amraneze/react-instagram-login';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AppContext } from '../../Context/AppContext';
 

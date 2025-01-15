@@ -1,4 +1,3 @@
-/* global FB */
 // import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/clerk-react";
 import { useEffect, useState } from "react";
 import CookieConsent from "./Components/Facebook/CookieConsent";
