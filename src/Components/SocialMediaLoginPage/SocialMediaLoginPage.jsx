@@ -54,7 +54,7 @@ const SocialMediaLoginPage = () => {
     const handleInstagramLogin = () => {
         const clientId = '1985482418624364';
         const redirectUri = `${window.location.origin}/instagram-callback`;
-        const scope = 'instagram_basic,instagram_manage_insights';
+        const scope = 'instagram_basic, instagram_manage_insights, public_profile';
 
         const authUrl = `https://www.facebook.com/v17.0/dialog/oauth?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code`;
 

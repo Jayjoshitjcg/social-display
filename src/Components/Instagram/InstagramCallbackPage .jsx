@@ -19,8 +19,9 @@ const InstagramCallbackPage = () => {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ code }),
                     });
-
+                    console.log("Response==>", response)
                     const data = await response.json();
+                    console.log("Data==>", data)
                     if (data.access_token) {
                         setInstaAccessToken(data.access_token);
                         navigate('/home');

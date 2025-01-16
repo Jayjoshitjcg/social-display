@@ -9,6 +9,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AppProvider } from "./Context/AppContext";
 import HeaderComponent from "./Components/Facebook/HeaderComponent/HeaderComponent";
 import InstagramCallbackPage from "./Components/Instagram/InstagramCallbackPage ";
+import TemplatePage from "./Components/TemplatePage/TemplatePage";
+import PostPage from "./Components/PostPage/PostPage";
 
 function App() {
 
@@ -24,10 +26,12 @@ function App() {
           <CookieConsent />
           <HeaderComponent />
           <Routes>
-            <Route path="/" element={<SocialMediaLoginPage />} />
+            {/* <Route path="/" element={<SocialMediaLoginPage />} />
             <Route path="/home" element={<Feed />} />
             <Route path="/create-post" element={<CreatePost />} />
-            <Route path="/instagram-callback" element={<InstagramCallbackPage />} />
+            <Route path="/instagram-callback" element={<InstagramCallbackPage />} /> */}
+            < Route path="/" element={<TemplatePage />} />
+            < Route path="/postpage" element={<PostPage />} />
           </Routes>
         </div>
       </Router>
