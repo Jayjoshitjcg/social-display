@@ -7,9 +7,10 @@ export const AppProvider = ({ children }) => {
     const [accessToken, setAccessToken] = useState();
     const [instaAccessToken, setInstaAccessToken] = useState()
     const [user, setUser] = useState()
+    const [userPages, setUserPages] = useState()
 
     return (
-        <AppContext.Provider value={{ posts, setPosts, accessToken, setAccessToken, user, setUser, instaAccessToken, setInstaAccessToken }} >
+        <AppContext.Provider value={{ posts, setPosts, accessToken, setAccessToken, user, setUser, instaAccessToken, setInstaAccessToken, userPages, setUserPages }} >
             {children}
         </AppContext.Provider>
     )

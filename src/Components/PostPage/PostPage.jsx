@@ -6,28 +6,19 @@ const PostPage = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const {
-        mediaItem,
-        // user = {
-        //     name: "John Doe",
-        //     socialMediaAccounts: [
-        //         { id: "fb", name: "Facebook Page", selected: false },
-        //         { id: "insta", name: "Instagram Page", selected: false },
-        //     ],
-        // },
-    } = location.state || {};
+    const { mediaItem } = location.state || {};
 
-    const socialMediaAccounts = [
-        { id: "fb", name: "Facebook Page", selected: false },
-        { id: "insta", name: "Instagram Page", selected: false },
-    ]
+    // const socialMediaAccounts = [
+    //     { id: "fb", name: "Facebook Page", selected: false },
+    //     { id: "insta", name: "Instagram Page", selected: false },
+    // ]
 
-    const { user } = useContext(AppContext)
-    console.log("user==>", user)
+    const { user, userPages } = useContext(AppContext)
 
     const [selectedAccounts, setSelectedAccounts] = useState([]);
     const [showCaptionInput, setShowCaptionInput] = useState(false);
     const [caption, setCaption] = useState("");
+    const [loading, setLoading] = useState(false); // Loader state
 
     if (!mediaItem) {
         return (
@@ -65,14 +56,64 @@ const PostPage = () => {
     };
 
     const handlePublishClick = () => {
-        // Handle publish logic here
-        alert("Post published!");
+        if (selectedAccounts.length === 0) {
+            alert("Please select at least one page to publish.");
+            return;
+        }
+
+        setLoading(true)
+
+        selectedAccounts.forEach((pageId) => {
+            // Find the selected page details
+            const page = userPages.find((p) => p.id === pageId);
+            const imageURL = `${window.location.origin}/images/${mediaItem.src}`;
+            console.log("image URL==>", imageURL)
+            if (page && page.access_token) {
+                // Call the Facebook API to post the image with the caption
+                window.FB.api(
+                    `/${pageId}/photos`,
+                    "POST",
+                    {
+                        url: "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg", // URL of the image to post
+                        caption: caption, // Caption to post with the image
+                        access_token: page.access_token, // Page access token
+                    },
+                    (response) => {
+                        if (response && !response.error) {
+                            console.log(`Successfully posted to page ${page.name}`);
+                            alert(`Successfully posted to ${page.name}`);
+                            setLoading(false)
+                            navigate('/');
+                        } else {
+                            console.error(
+                                `Error posting to page ${page.name}:`,
+                                response.error
+                            );
+                            alert(`Failed to post to ${page.name}. Please check console for details.`
+                            );
+                            setLoading(false)
+                        }
+                    }
+                );
+            } else {
+                console.error(
+                    `No access token found for page ${page?.name || pageId}`
+                );
+                alert(`Cannot post to page ${page?.name || pageId}`);
+                setLoading(false)
+            }
+        });
     };
+
 
     return (
         <div className=" h-screen w-[full] bg-gray-100 pt-12">
+            {loading && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            )}
             {showCaptionInput ?
-
                 <button
                     onClick={handlePublishClick}
                     className="absolute top-[5rem] right-[10rem] px-6 py-3 text-white text-lg rounded-md bg-blue-500 hover:bg-blue-600"
@@ -113,17 +154,17 @@ const PostPage = () => {
                                 {/* <h1 className="text-2xl font-bold mb-6">Hi, {user.name}</h1>
                                 <h2 className="text-xl font-semibold mb-4">Post to:</h2> */}
                                 <ul>
-                                    {socialMediaAccounts.map((account) => (
-                                        <li key={account.id} className="flex items-center mb-4">
+                                    {userPages?.map((page, index) => (
+                                        <li key={page?.id} className="flex items-center mb-4">
                                             <input
                                                 type="checkbox"
-                                                id={`social-${account.id}`}
+                                                id={`social-${page?.id}`}
                                                 className="mr-2"
-                                                checked={selectedAccounts.includes(account.id)}
-                                                onChange={() => handleCheckboxChange(account.id)}
+                                                checked={selectedAccounts.includes(page?.id)}
+                                                onChange={() => handleCheckboxChange(page?.id)}
                                             />
-                                            <label htmlFor={`social-${account.id}`} className="text-lg">
-                                                {account?.name}
+                                            <label htmlFor={`social-${page?.id}`} className="text-lg">
+                                                {page?.name}
                                             </label>
                                         </li>
                                     ))}

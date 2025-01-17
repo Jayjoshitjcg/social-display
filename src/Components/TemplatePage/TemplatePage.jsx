@@ -35,7 +35,6 @@ const TemplatePage = () => {
 
         fetchMediaItems();
     }, []);
-
     // Handle click on an image or video
     const handleMediaClick = (mediaItem) => {
         navigate('/postpage', { state: { mediaItem } });
