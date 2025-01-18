@@ -139,7 +139,7 @@ const HeaderComponent = () => {
                     }
                 },
                 {
-                    scope: "public_profile,email,pages_show_list,pages_read_engagement,pages_manage_posts,publish_pages",
+                    scope: "public_profile,email,pages_show_list,pages_read_engagement,pages_manage_posts",
                     auth_type: "rerequest",
                     configuration_id: CONFIGURATION_ID,
                 }
