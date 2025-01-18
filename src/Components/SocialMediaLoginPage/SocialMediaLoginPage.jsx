@@ -79,7 +79,7 @@ const SocialMediaLoginPage = () => {
                         fields="id,name,email,picture,birthday,first_name,last_name,gender,link,locale,timezone,updated_time,verified"
                         callback={handleFacebookResponse}
                         // scope="pages_manage_posts,pages_read_engagement"
-                        scope="publish_to_groups,publish_pages,user_photos, user_likes"
+                        scope="publish_to_groups,publish_pages,user_photos,user_likes"
                         render={(renderProps) => (
                             <div onClick={renderProps.onClick}>
                                 <FaFacebook className="text-3xl mb-2" />

@@ -14,11 +14,59 @@ const PostPage = () => {
     // ]
 
     const { user, userPages } = useContext(AppContext)
+    console.log("userPages==>", userPages)
 
-    const [selectedAccounts, setSelectedAccounts] = useState([]);
     const [showCaptionInput, setShowCaptionInput] = useState(false);
     const [caption, setCaption] = useState("");
-    const [loading, setLoading] = useState(false); // Loader state
+    const [loading, setLoading] = useState(false);
+    const [postType, setPostType] = useState("post");
+    const [selectedAccounts, setSelectedAccounts] = useState([]);
+
+    console.log("selectedAccounts==>", selectedAccounts)
+
+    const PostTypeSelector = ({ id, account, handleRadioChange }) => {
+        const isBothChecked = account?.isPost && account?.isStory;
+
+        return (
+            <div className="flex items-center justify-center mb-4 bg-gray-300 rounded-lg p-2">
+                <label className="mr-4">
+                    <input
+                        type="radio"
+                        name={`postType-${id}`}
+                        value="post"
+                        checked={account?.isPost && !isBothChecked} // "Post" should only be checked if it's post and not both
+                        onChange={() => handleRadioChange(id, "post")}
+                        className="mr-2"
+                    />
+                    Post
+                </label>
+                <label className="mr-4">
+                    <input
+                        type="radio"
+                        name={`postType-${id}`}
+                        value="story"
+                        checked={account?.isStory && !isBothChecked} // "Story" should only be checked if it's story and not both
+                        onChange={() => handleRadioChange(id, "story")}
+                        className="mr-2"
+                    />
+                    Story
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        name={`postType-${id}`}
+                        value="both"
+                        checked={isBothChecked} // "Both" is checked when both is true
+                        onChange={() => handleRadioChange(id, "both")}
+                        className="mr-2"
+                    />
+                    Both
+                </label>
+            </div>
+        );
+    };
+
+
 
     if (!mediaItem) {
         return (
@@ -43,13 +91,62 @@ const PostPage = () => {
         )
     }
 
-    const handleCheckboxChange = (accountId) => {
-        setSelectedAccounts((prev) =>
-            prev.includes(accountId)
-                ? prev.filter((id) => id !== accountId)
-                : [...prev, accountId]
+    const handleCheckboxChange = (accountId, pageType) => {
+        setSelectedAccounts((prev) => {
+            const isSelected = prev.some((account) => account.pageId === accountId);
+
+            if (isSelected) {
+                // Remove the deselected page
+                return prev.filter((account) => account.pageId !== accountId);
+            } else {
+                // Add the newly selected page
+                return [
+                    ...prev,
+                    {
+                        pageId: accountId,
+                        pagePlateformType: pageType,
+                        isPost: true,
+                        isStory: false,
+                    },
+                ];
+            }
+        });
+    };
+
+    const handleRadioChange = (id, type) => {
+        console.log("Selected type==>", type);
+        setSelectedAccounts((prevAccounts) =>
+            prevAccounts.map((account) => {
+                if (account?.pageId === id) {
+                    let updatedAccount = { ...account };
+
+                    if (type === "post") {
+                        updatedAccount = {
+                            ...updatedAccount,
+                            isPost: true,
+                            isStory: false,
+                        };
+                    } else if (type === "story") {
+                        updatedAccount = {
+                            ...updatedAccount,
+                            isPost: false,
+                            isStory: true,
+                        };
+                    } else if (type === "both") {
+                        updatedAccount = {
+                            ...updatedAccount,
+                            isPost: true,
+                            isStory: true,
+                        };
+                    }
+
+                    return updatedAccount;
+                }
+                return account;
+            })
         );
     };
+
 
     const handleNextClick = () => {
         setShowCaptionInput(true);
@@ -61,157 +158,355 @@ const PostPage = () => {
             return;
         }
 
-        setLoading(true)
+        setLoading(true);
 
-        selectedAccounts.forEach((pageId) => {
-            // Find the selected page details
+        selectedAccounts.forEach((account) => {
+            const { pageId, pagePlateformType, isPost, isStory } = account;
             const page = userPages.find((p) => p.id === pageId);
             const imageURL = `${window.location.origin}/images/${mediaItem.src}`;
-            console.log("image URL==>", imageURL)
+            console.log("Image URL:", imageURL);
+
             if (page && page.access_token) {
-                // Call the Facebook API to post the image with the caption
-                window.FB.api(
-                    `/${pageId}/photos`,
-                    "POST",
-                    {
-                        url: "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg", // URL of the image to post
-                        caption: caption, // Caption to post with the image
-                        access_token: page.access_token, // Page access token
-                    },
-                    (response) => {
-                        if (response && !response.error) {
-                            console.log(`Successfully posted to page ${page.name}`);
-                            alert(`Successfully posted to ${page.name}`);
-                            setLoading(false)
-                            navigate('/');
-                        } else {
-                            console.error(
-                                `Error posting to page ${page.name}:`,
-                                response.error
-                            );
-                            alert(`Failed to post to ${page.name}. Please check console for details.`
-                            );
-                            setLoading(false)
-                        }
+                // If the platform is Facebook
+                if (pagePlateformType === "Facebook") {
+                    // Publish post if isPost is true or if both is true
+                    if (isPost || (isPost && isStory)) {
+                        window.FB.api(
+                            `/${pageId}/photos`,
+                            "POST",
+                            {
+                                url: "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg", // URL of the image to post
+                                caption: caption, // Caption to post with the image
+                                access_token: page.access_token, // Page access token
+                            },
+                            (response) => {
+                                if (response && !response.error) {
+                                    console.log(`Successfully posted to page ${page.name}`);
+                                    alert(`Successfully posted to ${page.name}`);
+                                } else {
+                                    console.error(
+                                        `Error posting to page ${page.name}:`,
+                                        response.error
+                                    );
+                                    alert(
+                                        `Failed to post to ${page.name}. Please check the console for details.`
+                                    );
+                                }
+                            }
+                        );
                     }
-                );
+
+                    // Publish story if isStory is true or if both is true
+                    if (isStory || (isPost && isStory)) {
+                        window.FB.api(
+                            `/${pageId}/stories`,
+                            "POST",
+                            {
+                                file_url: "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg", // URL of the media to post as a story
+                                access_token: page.access_token, // Page access token
+                            },
+                            (response) => {
+                                if (response && !response.error) {
+                                    console.log(`Successfully posted a story to page ${page.name}`);
+                                    alert(`Successfully posted a story to ${page.name}`);
+                                } else {
+                                    console.error(
+                                        `Error posting a story to page ${page.name}:`,
+                                        response.error
+                                    );
+                                    alert(
+                                        `Failed to post a story to ${page.name}. Please check the console for details.`
+                                    );
+                                }
+                            }
+                        );
+                    }
+                }
+
+                // If the platform is Instagram
+                else if (pagePlateformType === "Instagram") {
+                    // Here, you'd call Instagram's API, which works differently from Facebook's
+                    if (isPost || (isPost && isStory)) {
+                        // Instagram post logic (using Instagram API)
+                        console.log(`Posting to Instagram page ${page.name} as post.`);
+                        // You would need to replace this with actual Instagram API logic
+                    }
+
+                    if (isStory || (isPost && isStory)) {
+                        // Instagram story logic (using Instagram API)
+                        console.log(`Posting to Instagram page ${page.name} as story.`);
+                        // You would need to replace this with actual Instagram API logic
+                    }
+                }
+
+                setLoading(false);
             } else {
                 console.error(
                     `No access token found for page ${page?.name || pageId}`
                 );
                 alert(`Cannot post to page ${page?.name || pageId}`);
-                setLoading(false)
+                setLoading(false);
             }
         });
     };
 
 
     return (
-        <div className=" h-screen w-[full] bg-gray-100 pt-12">
+        <div className="w-[full] pt-12">
             {loading && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                 </div>
             )}
-            {showCaptionInput ?
-                <button
-                    onClick={handlePublishClick}
-                    className="absolute top-[5rem] right-[10rem] px-6 py-3 text-white text-lg rounded-md bg-blue-500 hover:bg-blue-600"
-                >
-                    Publish
-                </button> :
-                <button
-                    onClick={handleNextClick}
-                    disabled={selectedAccounts.length === 0}
-                    className={`absolute top-[5rem] right-[10rem] px-6 py-3 text-white text-lg rounded-md ${selectedAccounts.length > 0
-                        ? "bg-blue-500 hover:bg-blue-600"
-                        : "bg-gray-400 cursor-not-allowed"
-                        }`}
-                >
-                    Next
-                </button>
-            }
-            <div className={`flex gap-6 w-full justify-center p-10`}>
-                <div className="border-r p-4 h-[100%]">
-                    <div className="flex items-center mb-4">
-                        <div className="w-12 h-12 rounded-full bg-gray-300 mr-4">
-                            <img src={user?.picture?.data?.url} alt="" className="rounded-full" />
-                        </div>
-                        <div>
-                            <p className="font-bold text-lg">{user?.name}</p>
-                            <p className="text-sm text-gray-500">Just now</p>
-                        </div>
-                    </div>
-                    {
-                        showCaptionInput ?
-                            <textarea
-                                className="w-[30rem] h-40 p-4 border rounded-md text-gray-700"
-                                placeholder="Write a caption for your post..."
-                                value={caption}
-                                onChange={(e) => setCaption(e.target.value)}
-                            /> :
-                            <div className="flex flex-col w-[20rem]">
-                                {/* <h1 className="text-2xl font-bold mb-6">Hi, {user.name}</h1>
-                                <h2 className="text-xl font-semibold mb-4">Post to:</h2> */}
-                                <ul>
-                                    {userPages?.map((page, index) => (
-                                        <li key={page?.id} className="flex items-center mb-4">
-                                            <input
-                                                type="checkbox"
-                                                id={`social-${page?.id}`}
-                                                className="mr-2"
-                                                checked={selectedAccounts.includes(page?.id)}
-                                                onChange={() => handleCheckboxChange(page?.id)}
-                                            />
-                                            <label htmlFor={`social-${page?.id}`} className="text-lg">
-                                                {page?.name}
-                                            </label>
-                                        </li>
-                                    ))}
-                                </ul>
+
+            {
+                !showCaptionInput ?
+                    // {/* page Selection */}
+                    <div>
+                        <button
+                            onClick={handleNextClick}
+                            disabled={selectedAccounts.length === 0}
+                            className={`absolute top-[5rem] right-[10rem] px-6 py-3 text-white text-lg rounded-md ${selectedAccounts.length > 0
+                                ? "bg-blue-500 hover:bg-blue-600"
+                                : "bg-gray-400 cursor-not-allowed"
+                                }`}
+                        >
+                            Next
+                        </button>
+                        <div className={`flex gap-6 w-full justify-start px-[20%] py-10`}>
+                            <div className="w-[50%] p-4 h-[100%]">
+
+                                <div className="flex flex-col w-[20rem]">
+                                    <div className="flex items-center mb-4">
+                                        <div className="w-12 h-12 rounded-full bg-gray-300 mr-4">
+                                            <img src={user?.picture?.data?.url} alt="" className="rounded-full" />
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-lg">{user?.name}</p>
+                                            <p className="text-sm text-gray-500">Just now</p>
+                                        </div>
+                                    </div>
+                                    <ul>
+                                        {userPages?.map((page) => (
+                                            <li key={page?.id} className="flex items-center mb-4">
+                                                <input
+                                                    type="checkbox"
+                                                    id={`social-${page?.id}`}
+                                                    className="mr-2"
+                                                    checked={selectedAccounts.some((account) => account.pageId === page?.id)}
+                                                    onChange={() => handleCheckboxChange(page?.id, page?.type)}
+                                                />
+                                                <label htmlFor={`social-${page?.id}`} className="text-lg">
+                                                    {page?.name}
+                                                </label>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
                             </div>
-                    }
-                </div>
-                <div className="w-full max-w-xl bg-white rounded-lg shadow-md p-6 relative">
-                    {/* Facebook Post Skeleton */}
-                    <div className="flex items-center mb-4">
-                        <div className="w-12 h-12 rounded-full bg-gray-300 mr-4">
-                            <img src={user?.picture?.data?.url} alt="" className="rounded-full" />
-                        </div>
-                        <div>
-                            <p className="font-bold text-lg">{user?.name}</p>
-                            <p className="text-sm text-gray-500">Just now</p>
+
+                            <div className="w-[50%] max-w-xl bg-white border-l rounded-lg shadow-md p-6 relative">
+                                {/* Facebook Post Skeleton */}
+                                <div className="flex items-center mb-4">
+                                    <div className="w-12 h-12 rounded-full bg-gray-300 mr-4">
+                                        <img src={user?.picture?.data?.url} alt="" className="rounded-full" />
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-lg">{user?.name}</p>
+                                        <p className="text-sm text-gray-500">Just now</p>
+                                    </div>
+                                </div>
+
+                                {/* Media Content */}
+                                <div className="w-full h-[full] bg-gray-100 rounded-lg overflow-hidden">
+                                    {mediaItem?.src?.endsWith(".mp4") ? (
+                                        <video
+                                            src={mediaItem.src}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <img
+                                            src={mediaItem.src}
+                                            alt="Selected Media"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
+                    :
+                    // {/* Make a Post */}
+                    Array.isArray(selectedAccounts) &&
+                    selectedAccounts?.length > 0 &&
+                    selectedAccounts?.map((account, index) => (
+                        <div key={index}>
+                            <button
+                                onClick={handlePublishClick}
+                                className="absolute top-[5rem] right-[10rem] px-6 py-3 text-white text-lg rounded-md bg-blue-500 hover:bg-blue-600"
+                            >
+                                Publish
+                            </button>
+                            <div>
+                                {/* Post */}
+                                {account?.isPost ? (
+                                    <div className={`flex gap-6 w-full justify-start px-[20%] py-10`}>
+                                        <div className="w-[50%] p-4 h-[100%]">
+                                            <div className="flex items-left mb-4">
+                                                <div className="w-12 h-12 rounded-full bg-gray-300 mr-4">
+                                                    <img src={user?.picture?.data?.url} alt="" className="rounded-full" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-lg">{user?.name}</p>
+                                                    <p className="text-sm text-gray-500">{account?.pagePlateformType}</p>
+                                                </div>
+                                            </div>
 
-                    {/* Live Caption */}
-                    {showCaptionInput && (
-                        <p className="mt-4 mb-5 text-gray-700 text-lg">
-                            {caption || "Write a caption..."}
-                        </p>
-                    )}
-
-                    {/* Media Content */}
-                    <div className="w-full h-[full] bg-gray-100 rounded-lg overflow-hidden">
+                                            <PostTypeSelector
+                                                key={index}
+                                                id={account?.pageId}
+                                                account={account}
+                                                handleRadioChange={handleRadioChange}
+                                            />
 
 
-                        {mediaItem?.src?.endsWith(".mp4") ? (
-                            <video
-                                src={mediaItem.src}
-                                className="w-full h-full object-cover"
-                                controls
-                            />
-                        ) : (
-                            <img
-                                src={mediaItem.src}
-                                alt="Selected Media"
-                                className="w-full h-full object-cover"
-                            />
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
+                                            <textarea
+                                                className="w-[100%] h-40 p-4 border rounded-md text-gray-700"
+                                                placeholder="Write a caption for your post..."
+                                                value={caption}
+                                                onChange={(e) => setCaption(e.target.value)}
+                                            />
+                                        </div>
+
+                                        <div className="w-[50%] max-w-xl bg-white border-l rounded-lg shadow-md p-6 relative">
+                                            {/* Facebook/Instagram Post Preview */}
+                                            <div className="flex items-center mb-4">
+                                                <div className="w-12 h-12 rounded-full bg-gray-300 mr-4">
+                                                    <img src={user?.picture?.data?.url} alt="" className="rounded-full" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-lg">{user?.name}</p>
+                                                    <p className="text-sm text-gray-500">Just now</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Live Caption */}
+                                            {showCaptionInput && (
+                                                <p className="mt-4 mb-5 text-gray-700 text-lg">
+                                                    {caption || "Your caption..."}
+                                                </p>
+                                            )}
+
+                                            {/* Media Content */}
+                                            <div className="w-full h-[full] bg-gray-100 rounded-lg overflow-hidden">
+                                                {mediaItem?.src?.endsWith(".mp4") ? (
+                                                    <video
+                                                        src={mediaItem.src}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <img
+                                                        src={mediaItem.src}
+                                                        alt="Selected Media"
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : null}
+
+                                {/* Story */}
+                                {account?.isStory ? (
+                                    <div className={`flex gap-6 w-full justify-start px-[20%] py-10`}>
+                                        {/* Sidebar Options */}
+                                        <div className="w-[50%] p-4 h-[100%]">
+                                            {/* User Info */}
+                                            <div className="flex items-left mb-4">
+                                                <div className="w-12 h-12 rounded-full bg-gray-300 mr-4">
+                                                    <img src={user?.picture?.data?.url} alt="User" className="rounded-full" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-lg">{user?.name}</p>
+                                                    <p className="text-sm text-gray-500">Just now</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Post Type Options */}
+                                            <PostTypeSelector
+                                                key={index}
+                                                id={account?.pageId}
+                                                account={account}
+                                                handleRadioChange={handleRadioChange}
+                                            />
+
+
+                                            <p className=" text-gray-600">
+                                                "Saddle up and share your story. No need for captions, partner.👌🤩"
+                                            </p>
+                                        </div>
+
+                                        {/* Story UI */}
+                                        <div className="w-[50%] max-w-sm bg-black rounded-lg shadow-md relative flex flex-col items-center justify-center overflow-hidden">
+                                            {/* Progress Bar */}
+                                            <div className="absolute top-2 left-4 right-4 flex gap-1">
+                                                {[...Array(3)].map((_, index) => (
+                                                    <div
+                                                        key={index}
+                                                        className={`flex-1 h-1 rounded-full ${index === 0 ? "bg-white" : "bg-gray-500"}`}
+                                                    ></div>
+                                                ))}
+                                            </div>
+
+                                            {/* Story Content */}
+                                            <div className="w-full h-[500px] relative">
+                                                {mediaItem?.src?.endsWith(".mp4") ? (
+                                                    <video
+                                                        src={mediaItem.src}
+                                                        className="w-full h-full object-cover"
+                                                        autoPlay
+                                                        muted
+                                                        loop
+                                                    />
+                                                ) : (
+                                                    <img
+                                                        src={mediaItem.src}
+                                                        alt="Selected Story Media"
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                )}
+
+                                                {/* User Info on Story */}
+                                                <div className="absolute top-4 left-4 flex items-center">
+                                                    <div className="w-10 h-10 rounded-full bg-gray-300 mr-3">
+                                                        <img src={user?.picture?.data?.url} alt="User" className="rounded-full" />
+                                                    </div>
+                                                    <p className="text-white text-sm font-bold">{user?.name}</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Comment Section */}
+                                            <div className="w-full p-4 bg-gray-800">
+                                                <div className="flex items-center">
+                                                    <div className="flex-1 p-3 rounded-lg bg-gray-700 text-gray-400 placeholder-gray-400 cursor-text">
+                                                        <p>Send a message...</p>
+                                                    </div>
+                                                    <div className="ml-3 flex gap-2 text-white text-lg">
+                                                        <span>😊</span>
+                                                        <span>🙌</span>
+                                                        <span>❤️</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                ) : null}
+                            </div>
+                        </div>
+                    ))
+            }
+        </div >
     );
 };
 

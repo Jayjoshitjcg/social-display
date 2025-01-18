@@ -13,17 +13,12 @@ import TemplatePage from "./Components/TemplatePage/TemplatePage";
 import PostPage from "./Components/PostPage/PostPage";
 
 function App() {
-  
+
 
   return (
     <AppProvider>
       <Router>
-        <div
-          style={{
-            height: '100dvh',
-            width: '100dvw',
-          }}
-        >
+        <div className="w-[100dvw] bg-gray-200" >
           <CookieConsent />
           <HeaderComponent />
           <Routes>

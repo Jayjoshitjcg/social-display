@@ -85,22 +85,19 @@ const HeaderComponent = () => {
                                     let completedRequests = 0;
 
                                     allPages.forEach((page) => {
+                                        // Check if the page has an Instagram account linked
                                         fetchInstagramAccount(page, (instagramAccount) => {
-                                            if (instagramAccount) {
-                                                // Add Instagram account details to the page object
-                                                pagesWithInstagram.push({
-                                                    ...page,
-                                                    instagramAccount,
-                                                });
-                                            } else {
-                                                // Add page without Instagram account
-                                                pagesWithInstagram.push(page);
-                                            }
+                                            const pageWithType = {
+                                                ...page,
+                                                type: instagramAccount ? 'Instagram' : 'Facebook', // Add type based on Instagram account presence
+                                                instagramAccount, // Add the Instagram account details if present
+                                            };
+
+                                            pagesWithInstagram.push(pageWithType);
 
                                             // Check if all requests are complete
                                             completedRequests++;
                                             if (completedRequests === allPages.length) {
-                                                console.log("All pages with Instagram accounts:", pagesWithInstagram);
                                                 setUserPages(pagesWithInstagram);
                                             }
                                         });
@@ -110,7 +107,6 @@ const HeaderComponent = () => {
                                     if (response.paging && response.paging.next) {
                                         fetchAllPages(response.paging.next, allPages);
                                     } else {
-                                        // No more pages, process the ones we've fetched
                                         if (allPages.length === 0) {
                                             console.log("No pages found for this user.");
                                         }
@@ -126,16 +122,10 @@ const HeaderComponent = () => {
                                 `/${page.id}?fields=instagram_business_account`,
                                 (response) => {
                                     if (response && response.instagram_business_account) {
-                                        console.log(
-                                            `Instagram account for page ${page.name}:`,
-                                            response.instagram_business_account
-                                        );
+                                        // If Instagram account exists, return the Instagram business account
                                         callback(response.instagram_business_account);
                                     } else {
-                                        console.warn(
-                                            `No Instagram account linked to page ${page.name}`,
-                                            response
-                                        );
+                                        // No Instagram account linked, return null
                                         callback(null);
                                     }
                                 }
@@ -149,7 +139,7 @@ const HeaderComponent = () => {
                     }
                 },
                 {
-                    scope: "public_profile,email,pages_show_list,pages_read_engagement,pages_manage_posts",
+                    scope: "public_profile,email,pages_show_list,pages_read_engagement,pages_manage_posts,publish_pages",
                     auth_type: "rerequest",
                     configuration_id: CONFIGURATION_ID,
                 }
