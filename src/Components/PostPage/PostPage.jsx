@@ -1,6 +1,8 @@
 import React, { useContext, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AppContext } from "../../Context/AppContext";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const PostPage = () => {
     const location = useLocation();
@@ -21,6 +23,9 @@ const PostPage = () => {
     const [loading, setLoading] = useState(false);
     const [postType, setPostType] = useState("post");
     const [selectedAccounts, setSelectedAccounts] = useState([]);
+    const [scheduledTime, setScheduledTime] = useState(null);
+    const [isScheduling, setIsScheduling] = useState(null);
+
 
     console.log("selectedAccounts==>", selectedAccounts)
 
@@ -250,6 +255,94 @@ const PostPage = () => {
         });
     };
 
+    const handleScheduleClick = () => {
+        if (!scheduledTime) {
+            alert("Please select a scheduled time.");
+            return;
+        }
+
+        if (selectedAccounts.length === 0) {
+            alert("Please select at least one page to schedule.");
+            return;
+        }
+
+        setLoading(true);
+
+        // Store the scheduled post in localStorage or sessionStorage
+        const postDetails = {
+            platform: selectedAccounts[0].pagePlateformType, // Assuming one account selected for simplicity
+            caption: caption,
+            mediaUrl: mediaItem?.src,
+            scheduledTime,
+        };
+
+        // Store the post details in localStorage
+        localStorage.setItem('scheduledPost', JSON.stringify(postDetails));
+
+        // Set a timeout to trigger the post when the scheduled time is reached
+        const delay = new Date(scheduledTime).getTime() - new Date().getTime();
+        if (delay > 0) {
+            setTimeout(() => {
+                publishScheduledPost();
+            }, delay);
+        } else {
+            alert("Scheduled time must be in the future.");
+        }
+
+        setLoading(false);
+    };
+
+    const publishScheduledPost = () => {
+        const storedPost = JSON.parse(localStorage.getItem('scheduledPost'));
+
+        if (storedPost) {
+            const { platform, caption, mediaUrl, scheduledTime } = storedPost;
+
+            if (platform === "Facebook") {
+                // Trigger Facebook post publishing
+                const pageId = selectedAccounts[0].pageId; // Assuming one account selected
+                const page = userPages.find((p) => p.id === pageId);
+
+                if (page && page.access_token) {
+                    window.FB.api(
+                        `/${pageId}/photos`,
+                        "POST",
+                        {
+                            url: mediaUrl, // Media URL of the image/video
+                            caption: caption, // Caption to post with the media
+                            access_token: page.access_token, // Page access token
+                        },
+                        (response) => {
+                            if (response && !response.error) {
+                                console.log(`Successfully posted to Facebook page ${page.name}`);
+                                alert(`Successfully posted to ${page.name}`);
+                            } else {
+                                console.error(`Error posting to Facebook page ${page.name}:`, response.error);
+                                alert(`Failed to post to ${page.name}. Please check the console for details.`);
+                            }
+                        }
+                    );
+                } else {
+                    console.error(`No access token found for page ${page?.name || pageId}`);
+                    alert(`Cannot post to page ${page?.name || pageId}`);
+                }
+            }
+
+            else if (platform === "Instagram") {
+                // Trigger Instagram post publishing (replace with actual Instagram API logic)
+                console.log(`Publishing to Instagram page...`);
+                alert(`Successfully posted to Instagram!`);
+
+                // You would need to replace this with Instagram API logic
+                // Instagram doesn't have direct photo upload API like Facebook does. You might need a service like Instagram Graph API or another method
+            }
+
+            localStorage.removeItem('scheduledPost'); // Clear the scheduled post after publishing
+        }
+    };
+
+
+
 
     return (
         <div className="w-[full] pt-12">
@@ -341,9 +434,34 @@ const PostPage = () => {
                     selectedAccounts?.length > 0 &&
                     selectedAccounts?.map((account, index) => (
                         <div key={index}>
+
+                            <div className="absolute top-[10rem] right-[12rem] ">
+                                <button
+                                    onClick={() => setIsScheduling(!isScheduling)}
+                                    className="fixed top-[5rem] right-[12rem] px-3 py-3.5 text-white bg-yellow-500 rounded-md"
+                                >
+                                    {isScheduling ? 'Confirm Schedule' : 'Schedule Post'}
+                                </button>
+                                {isScheduling && (
+                                    <div className="relative">
+                                        {/* DatePicker Component */}
+                                        <DatePicker
+                                            id="schedule-time"
+                                            selected={scheduledTime}
+                                            onChange={handleScheduleClick}
+                                            showTimeSelect
+                                            timeFormat="HH:mm"
+                                            dateFormat="yyyy/MM/dd h:mm aa"
+                                            placeholderText="Select a date and time"
+                                            className="fixed top-[9rem] right-[12rem]  border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 z-999"
+                                        />
+                                    </div>
+                                )}
+
+                            </div>
                             <button
                                 onClick={handlePublishClick}
-                                className="absolute top-[5rem] right-[10rem] px-6 py-3 text-white text-lg rounded-md bg-blue-500 hover:bg-blue-600"
+                                className="absolute top-[5rem] right-[2rem] px-6 py-3 text-white text-lg rounded-md bg-blue-500 hover:bg-blue-600"
                             >
                                 Publish
                             </button>
