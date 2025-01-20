@@ -219,8 +219,8 @@ const PostPage = () => {
                             `/${pageId}/photos`,
                             "POST",
                             {
-                                // url: "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg", // URL of the image to post
-                                url: imageURL,
+                                url: "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg", // URL of the image to post
+                                // url: imageURL,
                                 caption: captions[account?.page?.id] || "", // Caption to post with the image
                                 access_token: foundPage.access_token, // Page access token
                             },
