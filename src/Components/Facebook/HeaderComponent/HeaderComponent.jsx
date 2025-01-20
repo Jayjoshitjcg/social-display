@@ -76,7 +76,7 @@ const HeaderComponent = () => {
                         });
 
                         const fetchAllPages = (url, pages = []) => {
-                            window.FB.api(url, (response) => {
+                            window.FB.api(url, { fields: "access_token,id,name,email,picture" }, (response) => {
                                 if (response && response.data) {
                                     const allPages = [...pages, ...response.data];
 
