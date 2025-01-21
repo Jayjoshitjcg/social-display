@@ -22,7 +22,7 @@ const HeaderComponent = () => {
                 appId: "1144156470487645", // Your App ID
                 cookie: true, // Enable cookies
                 xfbml: true, // Parse social plugins
-                version: "v15.0", // API version
+                version: "v21.0", // API version
             });
             window.FB.__initialized = true;
             console.log("Facebook SDK initialized");
