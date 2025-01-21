@@ -1,5 +1,5 @@
 import React, { useEffect, useContext } from 'react';
-import { AppContext } from '../../../Context/AppContext';
+import { AppContext } from '../../Context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import { FaFacebook } from 'react-icons/fa';

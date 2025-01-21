@@ -7,7 +7,7 @@ import SocialMediaLoginPage from "./Components/SocialMediaLoginPage/SocialMediaL
 
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AppProvider } from "./Context/AppContext";
-import HeaderComponent from "./Components/Facebook/HeaderComponent/HeaderComponent";
+import HeaderComponent from "./Components/HeaderComponent/HeaderComponent";
 import InstagramCallbackPage from "./Components/Instagram/InstagramCallbackPage ";
 import TemplatePage from "./Components/TemplatePage/TemplatePage";
 import PostPage from "./Components/PostPage/PostPage";
