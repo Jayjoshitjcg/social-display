@@ -11,34 +11,35 @@ const HeaderComponent = () => {
     const CONFIGURATION_ID = "1839322333474319"; // Replace with your actual Configuration ID
 
     useEffect(() => {
-        // Check if the Facebook SDK is already initialized by checking for FB.init property
         if (window.FB && window.FB.__initialized) {
             console.log("Facebook SDK already initialized");
             return;
         }
 
         // Initialize Facebook SDK
-        window.fbAsyncInit = function () {
+        window.fbAsyncInit = () => {
             window.FB.init({
-                appId: "1144156470487645", // Replace with your Facebook App ID
-                cookie: true, // Enable cookies to allow the server to access the session
-                xfbml: true, // Parse social plugins on this page
-                version: "v15.0", // Use a valid version (e.g., "v15.0")
+                appId: "1144156470487645", // Your App ID
+                cookie: true, // Enable cookies
+                xfbml: true, // Parse social plugins
+                version: "v15.0", // API version
             });
-            window.FB.__initialized = true; // Mark SDK as initialized
+            window.FB.__initialized = true;
             console.log("Facebook SDK initialized");
         };
 
-        // Add script tag to load the SDK
-        (function (d, s, id) {
-            var js, fjs = d.getElementsByTagName(s)[0];
-            if (d.getElementById(id)) return;
-            js = d.createElement(s);
-            js.id = id;
-            js.src = "https://connect.facebook.net/en_US/sdk.js";
-            fjs.parentNode.insertBefore(js, fjs);
-        })(document, "script", "facebook-jssdk");
-    }, []); // Empty dependency array ensures it runs only once
+        // Add Facebook SDK script if not already added
+        const fbScriptId = "facebook-jssdk";
+        if (!document.getElementById(fbScriptId)) {
+            const script = document.createElement("script");
+            script.id = fbScriptId;
+            script.src = "https://connect.facebook.net/en_US/sdk.js";
+            script.async = true;
+            script.defer = true;
+            document.body.appendChild(script);
+        }
+    }, []); // Run only once
+
 
     const handleLogOut = () => {
         localStorage.removeItem("LOGIN_USER");
