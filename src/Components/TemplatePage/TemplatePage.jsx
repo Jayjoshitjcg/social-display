@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AppContext } from '../../Context/AppContext';
 
 const template1 = require(`../../Assets/images/Template-1.jpg`);
 const template2 = require(`../../Assets/images/Template-2.jpg`);
@@ -12,6 +13,7 @@ const template7 = require(`../../Assets/images/Template-7.jpg`);
 const TemplatePage = () => {
     const [mediaItems, setMediaItems] = useState([]);
     const navigate = useNavigate();
+    const { setMediaItem } = useContext(AppContext)
 
     useEffect(() => {
         const fetchMediaItems = async () => {
@@ -37,7 +39,8 @@ const TemplatePage = () => {
     }, []);
     // Handle click on an image or video
     const handleMediaClick = (mediaItem) => {
-        navigate('/postpage', { state: { mediaItem } });
+        setMediaItem(mediaItem)
+        navigate('/socialmedia');
     };
 
     return (
@@ -54,7 +57,7 @@ const TemplatePage = () => {
 
             {/* Masonry layout for images and videos */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full p-5 overflow-auto">
-                {mediaItems.map((item, index) => (
+                {mediaItems?.map((item, index) => (
                     <div
                         key={index}
                         className="relative flex justify-center items-center cursor-pointer"
@@ -62,12 +65,12 @@ const TemplatePage = () => {
                     >
                         {item?.src?.endsWith('.mp4' || 'WEBM') ? (
                             <video
-                                src={item.src}
+                                src={item?.src}
                                 className="w-full h-auto object-cover rounded-lg shadow-lg"
                             />
                         ) : (
                             <img
-                                src={item.src}
+                                src={item?.src}
                                 alt={`media-${index}`}
                                 className="w-[25rem] h-auto object-cover rounded-lg shadow-lg"
                             />

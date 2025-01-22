@@ -1,6 +1,7 @@
-import React, { useContext, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import React, { useContext, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppContext } from "../../Context/AppContext";
+import { Icon } from "@iconify/react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import styled from "styled-components";
@@ -24,18 +25,16 @@ const StyledDatePickerWrapper = styled.div`
 
 
 const PostPage = () => {
-    const location = useLocation();
     const navigate = useNavigate();
 
-    const { mediaItem } = location.state || {};
+    const { mediaItem } = useContext(AppContext);
 
     // const socialMediaAccounts = [
     //     { id: "fb", name: "Facebook Page", selected: false },
     //     { id: "insta", name: "Instagram Page", selected: false },
     // ]
 
-    const { user, userPages } = useContext(AppContext)
-    console.log("userPages==>", userPages)
+    const { user, userPages, setUserPages } = useContext(AppContext)
 
     const [showCaptionInput, setShowCaptionInput] = useState(false);
     const [captions, setCaptions] = useState({});
@@ -46,7 +45,40 @@ const PostPage = () => {
     const [isScheduling, setIsScheduling] = useState(null);
 
 
+    useEffect(() => {
+        const allPages = JSON.parse(localStorage.getItem("USER_PAGES")) || [];
+        setUserPages((prevPages) => {
+            // Ensure prevPages is an array before merging
+            return Array.isArray(prevPages) ? [...prevPages, ...allPages] : allPages;
+        });
+    }, []);
+
+    console.log("userPages==>", userPages)
     console.log("selectedAccounts==>", selectedAccounts)
+
+
+    if (!mediaItem) {
+        return (
+            <div className="h-screen flex items-center justify-center">
+                <p className="text-xl">No media selected. Please go back and select an image or video.</p>
+                <button
+                    onClick={() => navigate("/")}
+                    className="ml-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                >
+                    Go Back
+                </button>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return (
+            <div className="h-screen flex mt-20 justify-center">
+                <p className="text-2xl font-bold">Login to facebook to post</p>
+
+            </div>
+        )
+    }
 
     const PostTypeSelector = ({ id, account, handleRadioChange }) => {
         const isBothChecked = account?.isPost && account?.isStory;
@@ -89,33 +121,6 @@ const PostPage = () => {
             </div>
         );
     };
-
-
-
-    if (!mediaItem) {
-        return (
-            <div className="h-screen flex items-center justify-center">
-                <p className="text-xl">No media selected. Please go back and select an image or video.</p>
-                <button
-                    onClick={() => navigate("/")}
-                    className="ml-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                >
-                    Go Back
-                </button>
-            </div>
-        );
-    }
-
-    if (!user) {
-        return (
-            <div className="h-screen flex mt-20 justify-center">
-                <p className="text-2xl font-bold">Login to facebook to post</p>
-
-            </div>
-        )
-    }
-
-
 
     const handleCheckboxChange = (page) => {
         setSelectedAccounts((prev) => {
@@ -173,7 +178,6 @@ const PostPage = () => {
         );
     };
 
-
     const handleNextClick = () => {
         setShowCaptionInput(true);
     };
@@ -191,10 +195,6 @@ const PostPage = () => {
             const pageId = page.id; // Accessing pageId from the page object
             console.log("pagePlateformType==>", pagePlatformType)
 
-            // Debugging log to check the pageId and userPages
-            // console.log("Account Page ID:", pageId);
-            // console.log("User Pages Array:", userPages);
-
             const foundPage = userPages.find((p) => p.id === pageId);
 
             if (!foundPage) {
@@ -202,17 +202,14 @@ const PostPage = () => {
                 alert(`Cannot post to page with ID: ${pageId}`);
                 setLoading(false);
                 return;
-            }
-
-            console.log("Found page:", foundPage, foundPage?.access_token); // Debugging log for the found page
+            } console.log("Found page:", foundPage); // Debugging log for the found page
 
             const imageURL = `${window.location.origin}/images/${mediaItem.src}`;
             // console.log("Image URL:", imageURL);
 
-            if (foundPage && foundPage?.access_token) {
+            if (foundPage && foundPage?.accessToken) {
                 // If the platform is Facebook
                 if (pagePlatformType === "Facebook") {
-                    console.log("publishing>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
                     // Publish post if isPost is true or if both is true
                     if (isPost || (isPost && isStory)) {
                         window.FB.api(
@@ -222,12 +219,13 @@ const PostPage = () => {
                                 url: "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg", // URL of the image to post
                                 // url: imageURL,
                                 caption: captions[account?.page?.id] || "", // Caption to post with the image
-                                access_token: foundPage.access_token, // Page access token
+                                access_token: foundPage.accessToken, // Page access token
                             },
                             (response) => {
                                 if (response && !response.error) {
                                     console.log(`Successfully posted to page ${foundPage.name}`);
                                     alert(`Successfully posted to ${foundPage.name}`);
+                                    navigate("/")
                                 } else {
                                     console.error(
                                         `Error posting to page ${foundPage.name}:`,
@@ -243,42 +241,141 @@ const PostPage = () => {
 
                     // Publish story if isStory is true or if both is true
                     if (isStory || (isPost && isStory)) {
+                        // Step 1: Upload the photo
                         window.FB.api(
-                            `/${pageId}/stories`,
+                            `/${pageId}/photos`,
                             "POST",
                             {
-                                file_url: "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg", // URL of the media to post as a story
-                                access_token: foundPage.access_token, // Page access token
+                                url: "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg", // URL of the photo to upload
+                                access_token: foundPage.accessToken, // Page access token
+                                published: false,
                             },
-                            (response) => {
-                                if (response && !response.error) {
-                                    console.log(`Successfully posted a story to page ${foundPage.name}`);
-                                    alert(`Successfully posted a story to ${foundPage.name}`);
+                            (uploadResponse) => {
+                                if (uploadResponse && !uploadResponse.error) {
+                                    console.log("Photo uploaded successfully:", uploadResponse);
+
+                                    // Step 2: Use the photo_id to create a story
+                                    const photoId = uploadResponse.id; // Extract the photo ID
+                                    window.FB.api(
+                                        `/${pageId}/photo_stories`,
+                                        "POST",
+                                        {
+                                            photo_id: photoId, // Use the photo ID from the upload response
+                                            access_token: foundPage.accessToken // Page access token
+                                        },
+                                        (storyResponse) => {
+                                            if (storyResponse && !storyResponse.error) {
+                                                console.log(`Successfully posted a story to page ${foundPage.name}`);
+                                                alert(`Successfully posted a story to ${foundPage.name}`);
+                                            } else {
+                                                console.error(
+                                                    `Error posting a story to page ${foundPage.name}:`,
+                                                    storyResponse.error
+                                                );
+                                                alert(
+                                                    `Failed to post a story to ${foundPage.name}. Please check the console for details.`
+                                                );
+                                            }
+                                        }
+                                    );
                                 } else {
-                                    console.error(
-                                        `Error posting a story to page ${foundPage.name}:`,
-                                        response.error
-                                    );
-                                    alert(
-                                        `Failed to post a story to ${foundPage.name}. Please check the console for details.`
-                                    );
+                                    console.error("Error uploading photo:", uploadResponse.error);
+                                    alert("Failed to upload photo. Please check the console for details.");
                                 }
                             }
                         );
                     }
+
                 }
 
                 // If the platform is Instagram
                 else if (pagePlatformType === "Instagram") {
                     // Instagram post and story logic
                     if (isPost || (isPost && isStory)) {
-                        console.log(`Posting to Instagram page ${foundPage.name} as post.`);
-                        // Replace with actual Instagram API logic
+                        console.log(`Posting to Instagram page ${foundPage.name} as post. with ${foundPage.accessToken}`);
+                        window.FB.api(
+                            `/${foundPage.id}/media`,
+                            "POST",
+                            {
+                                // image_url: imageURL, // URL of the image to post
+                                image_url: "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg", // Testing URL of the image to post
+                                caption: captions[account?.page?.id] || "", // Caption to post with the image
+                                access_token: foundPage.accessToken,
+                            },
+                            (mediaResponse) => {
+                                if (mediaResponse && !mediaResponse.error) {
+                                    console.log("Successfully created media:", mediaResponse);
+
+                                    // Now, publish the media to Instagram
+                                    window.FB.api(
+                                        `/${foundPage.id}/media_publish`,
+                                        "POST",
+                                        {
+                                            creation_id: mediaResponse.id, // Use the created media ID
+                                            access_token: foundPage.accessToken,
+                                        },
+                                        (publishResponse) => {
+                                            if (publishResponse && !publishResponse.error) {
+                                                console.log(`Successfully posted to Instagram page ${foundPage.name}`);
+                                                alert(`Successfully posted to Instagram ${foundPage.name}`);
+                                            } else {
+                                                console.error(`Error posting to Instagram page ${foundPage.name}:`, publishResponse.error);
+                                                alert(`Failed to post to Instagram ${foundPage.name}. Please check the console for details.`);
+                                            }
+                                        }
+                                    );
+                                } else {
+                                    console.error("Error creating media for Instagram:", mediaResponse.error);
+                                    alert("Failed to create media for Instagram. Please check the console for details.");
+                                }
+                            }
+                        );
                     }
 
                     if (isStory || (isPost && isStory)) {
                         console.log(`Posting to Instagram page ${foundPage.name} as story.`);
-                        // Replace with actual Instagram API logic
+                        window.FB.api(
+                            `/${pageId}/photos`,
+                            "POST",
+                            {
+                                url: "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg", // URL of the photo to upload
+                                access_token: foundPage.accessToken, // Page access token
+                                published: false,
+                            },
+                            (uploadResponse) => {
+                                if (uploadResponse && !uploadResponse.error) {
+                                    console.log("Photo uploaded successfully:", uploadResponse);
+
+                                    // Step 2: Use the photo_id to create a story
+                                    const photoId = uploadResponse.id; // Extract the photo ID
+                                    window.FB.api(
+                                        `/${pageId}/photo_stories`,
+                                        "POST",
+                                        {
+                                            photo_id: photoId, // Use the photo ID from the upload response
+                                            access_token: foundPage.accessToken // Page access token
+                                        },
+                                        (storyResponse) => {
+                                            if (storyResponse && !storyResponse.error) {
+                                                console.log(`Successfully posted a story to page ${foundPage.name}`);
+                                                alert(`Successfully posted a story to ${foundPage.name}`);
+                                            } else {
+                                                console.error(
+                                                    `Error posting a story to page ${foundPage.name}:`,
+                                                    storyResponse.error
+                                                );
+                                                alert(
+                                                    `Failed to post a story to ${foundPage.name}. Please check the console for details.`
+                                                );
+                                            }
+                                        }
+                                    );
+                                } else {
+                                    console.error("Error uploading photo:", uploadResponse.error);
+                                    alert("Failed to upload photo. Please check the console for details.");
+                                }
+                            }
+                        );
                     }
                 }
 
@@ -290,8 +387,6 @@ const PostPage = () => {
             }
         });
     };
-
-
 
     const handleDateChange = (date) => {
         setScheduledTime(date);
@@ -312,99 +407,131 @@ const PostPage = () => {
 
         setLoading(true);
 
-        // Prepare post details for each selected account
-        const posts = selectedAccounts.map(account => {
-            return {
-                platform: account.pagePlateformType, // Platform type for each account
-                caption: captions[account?.page?.id] || "", // Get the caption for each account from state
-                mediaUrl: mediaItem?.src, // Assuming the same media for all selected accounts
-                scheduledTime,
-            };
+        // Calculate delay based on the scheduled time
+        const delay = new Date(scheduledTime).getTime() - new Date().getTime();
+
+        if (delay <= 0) {
+            alert("Scheduled time must be in the future.");
+            setLoading(false);
+            return;
+        }
+
+        // Alert the user for the scheduled post
+        selectedAccounts.forEach((account) => {
+            alert(`Your post for ${account.page?.name} has been scheduled for ${new Date(scheduledTime).toLocaleString()}`);
+            navigate('/')
         });
 
-        // Store the posts details in localStorage
-        localStorage.setItem("scheduledPosts", JSON.stringify(posts));
+        // Schedule the publish logic for all accounts
+        setTimeout(() => {
+            selectedAccounts.forEach((account) => {
+                const { page, pagePlatformType, isPost, isStory } = account;
+                const pageId = page.id; // Accessing pageId from the page object
+                const foundPage = userPages.find((p) => p.id === pageId);
 
-        // Calculate delay for each post and set timeouts
-        selectedAccounts.forEach((account, index) => {
-            const delay = new Date(scheduledTime).getTime() - new Date().getTime();
-            if (delay > 0) {
-                // Set a timeout to trigger the API call when the scheduled time is reached
-                setTimeout(() => {
-                    handlePublishClick(account); // Trigger publish for each account when time arrives
-                }, delay);
+                if (!foundPage) {
+                    console.error(`Page not found for ID: ${pageId}`);
+                    alert(`Cannot post to page with ID: ${pageId}`);
+                    return;
+                }
 
-                // Alert the user that the post has been scheduled
-                alert(`Your post for ${account.page?.name} has been scheduled for ${new Date(scheduledTime).toLocaleString()}`);
-            } else {
-                alert("Scheduled time must be in the future.");
-            }
-        });
+                const imageURL = `${window.location.origin}/images/${mediaItem.src}`;
+
+                if (foundPage && foundPage?.accessToken) {
+                    // Facebook post logic
+                    if (pagePlatformType === "Facebook") {
+                        if (isPost || (isPost && isStory)) {
+                            window.FB.api(
+                                `/${pageId}/photos`,
+                                "POST",
+                                {
+                                    url: "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg", // URL of the image to post
+                                    // url: imageURL,
+                                    caption: captions[account?.page?.id] || "",
+                                    access_token: foundPage.accessToken,
+                                },
+                                (response) => {
+                                    if (response && !response.error) {
+                                        console.log(`Successfully posted to page ${foundPage.name}`);
+                                    } else {
+                                        console.error(`Error posting to page ${foundPage.name}:`, response.error);
+                                    }
+                                }
+                            );
+                        }
+                        if (isStory || (isPost && isStory)) {
+                            window.FB.api(
+                                `/${pageId}/photos`,
+                                "POST",
+                                {
+                                    url: "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg", // URL of the photo to upload
+                                    access_token: foundPage.accessToken, // Page access token
+                                    published: false,
+                                },
+                                (uploadResponse) => {
+                                    if (uploadResponse && !uploadResponse.error) {
+                                        console.log("Photo uploaded successfully:", uploadResponse);
+
+                                        // Step 2: Use the photo_id to create a story
+                                        const photoId = uploadResponse.id; // Extract the photo ID
+                                        window.FB.api(
+                                            `/${pageId}/photo_stories`,
+                                            "POST",
+                                            {
+                                                photo_id: photoId, // Use the photo ID from the upload response
+                                                access_token: foundPage.accessToken, // Page access token
+                                            },
+                                            (storyResponse) => {
+                                                if (storyResponse && !storyResponse.error) {
+                                                    console.log(`Successfully posted a story to page ${foundPage.name}`);
+                                                    alert(`Successfully posted a story to ${foundPage.name}`);
+                                                } else {
+                                                    console.error(
+                                                        `Error posting a story to page ${foundPage.name}:`,
+                                                        storyResponse.error
+                                                    );
+                                                    alert(
+                                                        `Failed to post a story to ${foundPage.name}. Please check the console for details.`
+                                                    );
+                                                }
+                                            }
+                                        );
+                                    } else {
+                                        console.error("Error uploading photo:", uploadResponse.error);
+                                        alert("Failed to upload photo. Please check the console for details.");
+                                    }
+                                }
+                            );
+                        }
+                    }
+
+                    // Instagram post logic
+                    if (pagePlatformType === "Instagram") {
+                        if (isPost || (isPost && isStory)) {
+                            console.log(`Posting to Instagram page ${foundPage.name} as post.`);
+                        }
+                        if (isStory || (isPost && isStory)) {
+                            console.log(`Posting to Instagram page ${foundPage.name} as story.`);
+                        }
+                    }
+                } else {
+                    console.error(`No access token found for page ${foundPage?.name || pageId}`);
+                    alert(`Cannot post to page ${foundPage?.name || pageId}`);
+                }
+            });
+
+            setLoading(false); // End loading state after the scheduled post
+        }, delay);
 
         setIsScheduling(false);
         setLoading(false);
     };
-
-
-
-
-    // const publishScheduledPost = () => {
-    //     const storedPost = JSON.parse(localStorage.getItem('scheduledPost'));
-
-    //     if (storedPost) {
-    //         const { platform, caption, mediaUrl, scheduledTime } = storedPost;
-
-    //         if (platform === "Facebook") {
-    //             // Trigger Facebook post publishing
-    //             const pageId = selectedAccounts[0].pageId; // Assuming one account selected
-    //             const page = userPages.find((p) => p.id === pageId);
-
-    //             if (page && page.access_token) {
-    //                 window.FB.api(
-    //                     `/${pageId}/photos`,
-    //                     "POST",
-    //                     {
-    //                         url: mediaUrl, // Media URL of the image/video
-    //                         caption: caption, // Caption to post with the media
-    //                         access_token: page.access_token, // Page access token
-    //                     },
-    //                     (response) => {
-    //                         if (response && !response.error) {
-    //                             console.log(`Successfully posted to Facebook page ${page.name}`);
-    //                             alert(`Successfully posted to ${page.name}`);
-    //                         } else {
-    //                             console.error(`Error posting to Facebook page ${page.name}:`, response.error);
-    //                             alert(`Failed to post to ${page.name}. Please check the console for details.`);
-    //                         }
-    //                     }
-    //                 );
-    //             } else {
-    //                 console.error(`No access token found for page ${page?.name || pageId}`);
-    //                 alert(`Cannot post to page ${page?.name || pageId}`);
-    //             }
-    //         }
-
-    //         else if (platform === "Instagram") {
-    //             // Trigger Instagram post publishing (replace with actual Instagram API logic)
-    //             console.log(`Publishing to Instagram page...`);
-    //             alert(`Successfully posted to Instagram!`);
-
-    //             // You would need to replace this with Instagram API logic
-    //             // Instagram doesn't have direct photo upload API like Facebook does. You might need a service like Instagram Graph API or another method
-    //         }
-
-    //         localStorage.removeItem('scheduledPost'); // Clear the scheduled post after publishing
-    //     }
-    // };
-
 
     const handleCaptionChange = (e, accountId) => {
         // Update the caption for the specific account
         const updatedCaptions = { ...captions, [accountId]: e.target.value };
         setCaptions(updatedCaptions);
     };
-
-    console.log("Captions:==>", captions)
 
 
     return (
@@ -415,24 +542,85 @@ const PostPage = () => {
                 </div>
             )}
 
+            {/* Header */}
+            <div className="w-[100%] flex justify-between gap-5 pr-5">
+                <div onClick={() => navigate(-1)} className="ml-10 text-[2rem] cursor-pointer">
+                    <Icon icon="famicons:arrow-back" />
+                </div>
+                <div>
+                    {
+                        !showCaptionInput ?
+                            <button
+                                onClick={handleNextClick}
+                                disabled={selectedAccounts.length === 0}
+                                className={`px-6 py-3 text-white text-lg rounded-md ${selectedAccounts.length > 0
+                                    ? "bg-blue-500 hover:bg-blue-600"
+                                    : "bg-gray-400 cursor-not-allowed"
+                                    }`}
+                            >
+                                Next
+                            </button>
+                            :
+                            <div className="flex flex-col gap-3">
+                                <div className="flex gap-5">
+                                    <div>
+                                        {
+                                            !isScheduling ?
+                                                <button
+                                                    onClick={() => setIsScheduling(!isScheduling)}
+                                                    className="px-3 py-3.5 text-white bg-yellow-500 rounded-md"
+                                                >
+                                                    Schedule
+                                                </button> :
+                                                <button
+                                                    onClick={handleScheduleClick}
+                                                    className="px-3 py-3.5 text-white bg-yellow-500 rounded-md"
+                                                >
+                                                    Confirm Schedule
+                                                </button>
+                                        }
+                                    </div>
+
+                                    <button
+                                        onClick={handlePublishClick}
+                                        disabled={isScheduling}
+                                        className={`px-6 py-3 text-white text-lg rounded-md ${isScheduling ? "bg-gray-400 cursor-not-allowed" : "bg-blue-500 hover:bg-blue-600"
+                                            }`}
+                                    >
+                                        Publish
+                                    </button>
+                                </div>
+                                {isScheduling && (
+                                    <div className="flex gap-2">
+                                        {/* DatePicker Component */}
+                                        <StyledDatePickerWrapper>
+                                            <DatePicker
+                                                id="schedule-time"
+                                                selected={scheduledTime}
+                                                onChange={handleDateChange}
+                                                showTimeSelect
+                                                timeFormat="HH:mm"
+                                                dateFormat="yyyy/MM/dd h:mm aa"
+                                                placeholderText="Select a date and time"
+                                                className="border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 z-999"
+                                                popperClassName="custom-datepicker-width" // Use custom class for the dialog
+                                            />
+                                        </StyledDatePickerWrapper>
+                                        <p onClick={() => setIsScheduling(!isScheduling)} className="cursor-pointer">X</p>
+                                    </div>
+                                )}
+                            </div>
+                    }
+                </div>
+            </div>
+
             {
                 !showCaptionInput ?
                     // {/* page Selection */}
                     <div>
-                        <button
-                            onClick={handleNextClick}
-                            disabled={selectedAccounts.length === 0}
-                            className={`absolute top-[5rem] right-[10rem] px-6 py-3 text-white text-lg rounded-md ${selectedAccounts.length > 0
-                                ? "bg-blue-500 hover:bg-blue-600"
-                                : "bg-gray-400 cursor-not-allowed"
-                                }`}
-                        >
-                            Next
-                        </button>
                         <div className={`flex gap-6 w-full justify-start px-[20%] py-10`}>
                             <div className="w-[50%] p-4 h-[100%]">
-
-                                <div className="flex flex-col w-[20rem]">
+                                <div className="flex flex-col justify-start w-[25rem] gap-4 ">
                                     <div className="flex items-center mb-4">
                                         <div className="w-12 h-12 rounded-full bg-gray-300 mr-4">
                                             <img src={user?.picture?.data?.url} alt="" className="rounded-full" />
@@ -442,18 +630,34 @@ const PostPage = () => {
                                             <p className="text-sm text-gray-500">Just now</p>
                                         </div>
                                     </div>
-                                    <ul>
+                                    <ul className="flex flex-col items-start gap-4">
                                         {userPages?.map((page) => (
-                                            <li key={page?.id} className="flex items-center mb-4">
+                                            <li key={page?.id} className="flex items-center gap-4">
                                                 <input
                                                     type="checkbox"
                                                     id={`social-${page?.id}`}
-                                                    className="mr-2"
                                                     checked={selectedAccounts.some((account) => account?.page?.id === page?.id)}
                                                     onChange={() => handleCheckboxChange(page)}
                                                 />
                                                 <label htmlFor={`social-${page?.id}`} className="text-lg">
-                                                    {page?.name}
+                                                    <div className="flex items-center">
+                                                        <div className="w-12 h-12 rounded-full bg-gray-300 mr-4">
+                                                            {/* Ensure you're fetching the correct profile picture for Facebook or Instagram */}
+                                                            <img
+                                                                src={
+                                                                    page?.instagramAccount?.profile_picture_url ||
+                                                                    page?.picture?.data?.url ||
+                                                                    "default-profile-pic-url.jpg" // Fallback URL if no picture is available
+                                                                }
+                                                                alt={page?.name}
+                                                                className="rounded-full"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold text-lg">{page?.name}</p>
+                                                            <p className="text-sm text-gray-500">{page?.type}</p>
+                                                        </div>
+                                                    </div>
                                                 </label>
                                             </li>
                                         ))}
@@ -494,48 +698,6 @@ const PostPage = () => {
                     :
 
                     <>
-                        <div className="absolute top-[5rem] right-[12rem] ">
-                            {
-                                !isScheduling ?
-                                    <button
-                                        onClick={() => setIsScheduling(!isScheduling)}
-                                        className="px-3 py-3.5 text-white bg-yellow-500 rounded-md"
-                                    >
-                                        Schedule
-                                    </button> :
-                                    <button
-                                        onClick={handleScheduleClick}
-                                        className="px-3 py-3.5 text-white bg-yellow-500 rounded-md"
-                                    >
-                                        Confirm Schedule
-                                    </button>
-                            }
-                            {isScheduling && (
-                                <div className="relative">
-                                    {/* DatePicker Component */}
-                                    <StyledDatePickerWrapper>
-                                        <DatePicker
-                                            id="schedule-time"
-                                            selected={scheduledTime}
-                                            onChange={handleDateChange}
-                                            showTimeSelect
-                                            timeFormat="HH:mm"
-                                            dateFormat="yyyy/MM/dd h:mm aa"
-                                            placeholderText="Select a date and time"
-                                            className="border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 z-999"
-                                            popperClassName="custom-datepicker-width" // Use custom class for the dialog
-                                        />
-                                    </StyledDatePickerWrapper>
-                                </div>
-                            )}
-                        </div>
-
-                        <button
-                            onClick={handlePublishClick}
-                            className="absolute top-[5rem] right-[2rem] px-6 py-3 text-white text-lg rounded-md bg-blue-500 hover:bg-blue-600"
-                        >
-                            Publish
-                        </button>
                         {/* Make a Post */}
                         {
                             Array.isArray(selectedAccounts) &&
@@ -623,7 +785,7 @@ const PostPage = () => {
                                                         </div>
                                                         <div>
                                                             <p className="font-bold text-lg">{account?.page?.name}</p>
-                                                            <p className="text-sm text-gray-500">{account?.page?.name}</p>
+                                                            <p className="text-sm text-gray-500">{account?.page?.type}</p>
                                                         </div>
                                                     </div>
 
@@ -674,9 +836,9 @@ const PostPage = () => {
                                                         {/* User Info on Story */}
                                                         <div className="absolute top-4 left-4 flex items-center">
                                                             <div className="w-10 h-10 rounded-full bg-gray-300 mr-3">
-                                                                <img src={user?.picture?.data?.url} alt="User" className="rounded-full" />
+                                                                <img src={account?.page?.picture?.data?.url} alt="User" className="rounded-full" />
                                                             </div>
-                                                            <p className="text-white text-sm font-bold">{user?.name}</p>
+                                                            <p className="text-white text-sm font-bold">{account?.page?.name}</p>
                                                         </div>
                                                     </div>
 

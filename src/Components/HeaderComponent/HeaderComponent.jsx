@@ -167,8 +167,8 @@ const HeaderComponent = () => {
                         aria-label="Login with Facebook"
                         className="cursor-pointer flex flex-col items-center"
                     >
-                        <FaFacebook className="text-3xl mb-2" />
-                        <span className="text-xs font-medium">Facebook</span>
+                        {/* <FaFacebook className="text-3xl mb-2" />
+                        <span className="text-xs font-medium">Facebook</span> */}
                     </div>
                 )}
             </div>

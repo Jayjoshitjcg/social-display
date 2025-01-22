@@ -11,6 +11,7 @@ import HeaderComponent from "./Components/HeaderComponent/HeaderComponent";
 import InstagramCallbackPage from "./Components/Instagram/InstagramCallbackPage ";
 import TemplatePage from "./Components/TemplatePage/TemplatePage";
 import PostPage from "./Components/PostPage/PostPage";
+import SocialMediaSelection from "./Components/SocialMediaSelection/SocialMediaSelection";
 
 function App() {
 
@@ -27,6 +28,7 @@ function App() {
             <Route path="/create-post" element={<CreatePost />} />
             <Route path="/instagram-callback" element={<InstagramCallbackPage />} /> */}
             < Route path="/" element={<TemplatePage />} />
+            <Route path="/socialmedia" element={<SocialMediaSelection />} />
             < Route path="/postpage" element={<PostPage />} />
           </Routes>
         </div>
