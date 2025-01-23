@@ -5,6 +5,8 @@ import { Icon } from "@iconify/react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import styled from "styled-components";
+import { gapi } from "gapi-script";
+
 
 const StyledDatePickerWrapper = styled.div`
   .custom-datepicker-width {
@@ -182,7 +184,7 @@ const PostPage = () => {
         setShowCaptionInput(true);
     };
 
-    const handlePublishClick = () => {
+    const handlePublishClick = async () => {
         if (selectedAccounts.length === 0) {
             alert("Please select at least one page to publish.");
             return;
@@ -190,7 +192,7 @@ const PostPage = () => {
 
         setLoading(true);
 
-        selectedAccounts.forEach((account) => {
+        for (const account of selectedAccounts) {
             const { page, pagePlatformType, isPost, isStory } = account;
             const pageId = page.id; // Accessing pageId from the page object
             console.log("pagePlateformType==>", pagePlatformType)
@@ -379,14 +381,65 @@ const PostPage = () => {
                     }
                 }
 
+                // If the platform is Youtube
+                else if (pagePlatformType === "Youtube") {
+                    try {
+                        // Define the metadata for the YouTube video
+                        const metadata = {
+                            snippet: {
+                                title: "My YouTube Short",
+                                description: "This is a short uploaded via the API",
+                                tags: ["shorts", "example", "api"],
+                                channelId: foundPage.id, // Ensure the correct channelId
+                                categoryId: "22",
+                            },
+                            status: {
+                                privacyStatus: "public",
+                                madeForKids: false,
+                            },
+                        };
+
+                        // Prepare the form data for the request
+                        const formData = new FormData();
+
+                        // Append metadata as JSON string directly to form data
+                        // formData.append("metadata", JSON.stringify(metadata));
+
+                        // Append video file URL or file object (in this case, use the actual video file instead of a URL)
+                        const videoFile = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+                        formData.append("video", videoFile);
+
+                        // Make the API request
+                        const response = await gapi.client.request({
+                            path: "https://www.googleapis.com/upload/youtube/v3/videos",
+                            method: "POST",
+                            params: {
+                                uploadType: "multipart",
+                                part: "snippet,status",
+                            },
+                            headers: {
+                                Authorization: `Bearer ${user?.accessToken}`,
+                                ContentType: 'application/json'
+                            },
+                            body: formData,
+                        });
+
+                        console.log("Video uploaded successfully:", response);
+                        alert(`Video successfully uploaded to YouTube channel ${foundPage.name}`);
+                    } catch (error) {
+                        console.error("Failed to upload video to YouTube:", error);
+                        alert(`Failed to upload video to YouTube channel ${foundPage.name}`);
+                    }
+                }
                 setLoading(false);
             } else {
                 console.error(`No access token found for page ${foundPage?.name || pageId}`);
                 alert(`Cannot post to page ${foundPage?.name || pageId}`);
                 setLoading(false);
             }
-        });
+        }
     };
+
 
     const handleDateChange = (date) => {
         setScheduledTime(date);
@@ -643,15 +696,27 @@ const PostPage = () => {
                                                     <div className="flex items-center">
                                                         <div className="w-12 h-12 rounded-full bg-gray-300 mr-4">
                                                             {/* Ensure you're fetching the correct profile picture for Facebook or Instagram */}
-                                                            <img
-                                                                src={
-                                                                    page?.instagramAccount?.profile_picture_url ||
-                                                                    page?.picture?.data?.url ||
-                                                                    "default-profile-pic-url.jpg" // Fallback URL if no picture is available
-                                                                }
-                                                                alt={page?.name}
-                                                                className="rounded-full"
-                                                            />
+                                                            {
+                                                                page?.type === "Youtube"
+                                                                    ?
+                                                                    <img
+                                                                        src={
+                                                                            page?.picture || "default-profile-pic-url.jpg" // Fallback URL if no picture is available
+                                                                        }
+                                                                        alt={page?.name}
+                                                                        className="rounded-full"
+                                                                    />
+                                                                    :
+                                                                    <img
+                                                                        src={
+                                                                            page?.instagramAccount?.profile_picture_url ||
+                                                                            page?.picture?.data?.url ||
+                                                                            "default-profile-pic-url.jpg" // Fallback URL if no picture is available
+                                                                        }
+                                                                        alt={page?.name}
+                                                                        className="rounded-full"
+                                                                    />
+                                                            }
                                                         </div>
                                                         <div>
                                                             <p className="font-bold text-lg">{page?.name}</p>
@@ -666,7 +731,7 @@ const PostPage = () => {
                             </div>
 
                             <div className="w-[50%] max-w-xl bg-white border-l rounded-lg shadow-md p-6 relative">
-                                {/* Facebook Post Skeleton */}
+                                {/* Post Skeleton */}
                                 <div className="flex items-center mb-4">
                                     <div className="w-12 h-12 rounded-full bg-gray-300 mr-4">
                                         <img src={user?.picture?.data?.url} alt="" className="rounded-full" />
@@ -711,7 +776,11 @@ const PostPage = () => {
                                                 <div className="w-[50%] p-4 h-[100%]">
                                                     <div className="flex items-left mb-4">
                                                         <div className="w-12 h-12 rounded-full bg-gray-300 mr-4">
-                                                            <img src={account?.page?.picture?.data?.url} alt="" className="rounded-full" />
+                                                            {
+                                                                account?.page?.type === "Youtube"
+                                                                    ? <img src={account?.page?.picture} alt="" className="rounded-full" />
+                                                                    : <img src={account?.page?.picture?.data?.url} alt="" className="rounded-full" />
+                                                            }
                                                         </div>
                                                         <div>
                                                             <p className="font-bold text-lg">{account?.page?.name}</p>
@@ -719,13 +788,15 @@ const PostPage = () => {
                                                         </div>
                                                     </div>
 
-                                                    <PostTypeSelector
-                                                        key={index}
-                                                        id={account?.page?.id}
-                                                        account={account}
-                                                        handleRadioChange={handleRadioChange}
-                                                    />
-
+                                                    {
+                                                        account?.page?.type !== "Youtube" &&
+                                                        <PostTypeSelector
+                                                            key={index}
+                                                            id={account?.page?.id}
+                                                            account={account}
+                                                            handleRadioChange={handleRadioChange}
+                                                        />
+                                                    }
 
                                                     <textarea
                                                         className="w-[100%] h-40 p-4 border rounded-md text-gray-700"
@@ -739,7 +810,11 @@ const PostPage = () => {
                                                     {/* Facebook/Instagram Post Preview */}
                                                     <div className="flex items-center mb-4">
                                                         <div className="w-12 h-12 rounded-full bg-gray-300 mr-4">
-                                                            <img src={account?.page?.picture?.data?.url} alt="" className="rounded-full" />
+                                                            {
+                                                                account?.page?.type === "Youtube"
+                                                                    ? <img src={account?.page?.picture} alt="" className="rounded-full" />
+                                                                    : <img src={account?.page?.picture?.data?.url} alt="" className="rounded-full" />
+                                                            }
                                                         </div>
                                                         <div>
                                                             <p className="font-bold text-lg">{account?.page?.name}</p>

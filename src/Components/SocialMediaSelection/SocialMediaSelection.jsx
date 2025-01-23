@@ -3,6 +3,7 @@ import { AppContext } from '../../Context/AppContext'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Icon } from "@iconify/react";
 import Cookies from 'js-cookie';
+import { gapi } from "gapi-script";
 
 const SocialMediaSelection = () => {
 
@@ -19,7 +20,110 @@ const SocialMediaSelection = () => {
     // console.log("Logged in User====>>>>", logedInUser);
   }, [])
 
+  // Meta/Insta
   const CONFIGURATION_ID = "1839322333474319";
+
+
+  // Function to decode JWT and extract user data
+  const extractUserDataFromJWT = (token) => {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map(function (c) {
+          return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+        })
+        .join("")
+    );
+
+    const payload = JSON.parse(jsonPayload);
+    return {
+      name: payload.name,
+      email: payload.email,
+      picture: payload.picture,
+    };
+  };
+
+
+  const authenticate = async () => {
+    try {
+      const authInstance = gapi.auth2.getAuthInstance();
+
+      // Check if the user is not signed in, and initiate sign-in if needed
+      if (!authInstance.isSignedIn.get()) {
+        await authInstance.signIn();
+      }
+
+      // Get the authenticated user's details
+      const authResponse = authInstance.currentUser.get().getAuthResponse();
+
+      // Log success message with authResponse
+      // console.log("User authenticated successfully:", authResponse);
+      const jwt_Token = authResponse?.id_token;
+      console.log("Google JWT Token:", authResponse)
+
+      const extractedUserData = extractUserDataFromJWT(jwt_Token);
+      console.log("User Data::", extractedUserData);
+      setUser({ ...extractedUserData, accessToken: authResponse?.access_token })
+      localStorage.setItem(
+        "LOGIN_USER",
+        JSON.stringify({
+          userEmail: extractedUserData?.email,
+          userName: extractedUserData?.name,
+
+        })
+      );
+
+      return authResponse;
+    } catch (error) {
+      console.error("Authentication failed:", error);
+    }
+  };
+
+
+  const fetchLinkedYouTubeAccounts = async () => {
+    try {
+      const response = await gapi.client.youtube.channels.list({
+        part: "snippet,contentDetails",
+        mine: true, // Retrieves channels owned by the authenticated user
+      });
+
+      if (response.result.items && response.result.items.length > 0) {
+        const channels = response.result.items;
+        console.log("Linked YouTube Accounts:", channels);
+        return channels;
+      } else {
+        console.log("No channels found for this account");
+        return [];
+      }
+    } catch (error) {
+      console.error("Failed to fetch linked YouTube accounts:", error);
+      throw error; // Re-throw the error for further handling
+    }
+  };
+
+
+  const handleYoutubeShorts = async () => {
+    if (mediaItem) {
+      if (mediaItem.type !== 'video') {
+        alert("The selected media is not a video. Please select a video file.");
+        return;
+      }
+      await authenticate();
+      const linkedAccounts = await fetchLinkedYouTubeAccounts();
+      const allChennals = linkedAccounts?.map((account) => ({
+        id: account?.id,
+        name: account?.snippet?.localized?.title,
+        accessToken: account?.etag,
+        picture: account?.snippet?.thumbnails?.default?.url,
+        type: "Youtube"
+      }))
+      setUserPages(allChennals || []);
+      navigate("/postpage");
+    }
+  }
+
 
   const handleFacebookLogin = () => {
     if (!logedInUser) {
@@ -178,6 +282,8 @@ const SocialMediaSelection = () => {
 
 
 
+
+
   return (
     <div>
       <div className={`flex gap-6 w-full justify-start px-[20%] py-10`}>
@@ -192,17 +298,17 @@ const SocialMediaSelection = () => {
             </div>
 
             <div className="flex flex-wrap justify-start gap-5 mt-10">
-              <div onClick={handleFacebookLogin} className="w-[40%] h-12 flex items-center gap-2 rounded-lg border-[1px] border-gray-400 hover:border-blue-500 mr-4 px-4 cursor-pointer">
+              <div onClick={handleFacebookLogin} className="w-auto h-12 flex items-center gap-2 rounded-lg border-[1px] border-gray-400 hover:border-blue-500 mr-4 px-4 cursor-pointer">
                 <Icon icon="logos:facebook" />
                 <span>Facebook</span>
               </div>
-              <div onClick={handleInstagramLogin} className="w-[40%] h-12 flex items-center gap-2 rounded-lg border-[1px] border-gray-400 hover:border-pink-400 mr-4 px-4 cursor-pointer">
+              <div onClick={handleInstagramLogin} className="w-auto h-12 flex items-center gap-2 rounded-lg border-[1px] border-gray-400 hover:border-pink-400 mr-4 px-4 cursor-pointer">
                 <Icon icon="skill-icons:instagram" />
                 <span>Instagram</span>
               </div>
-              <div className="w-[40%] h-12 flex items-center gap-2 rounded-lg border-[1px] border-gray-400 hover:border-red-300 mr-4 px-4 cursor-pointer">
+              <div onClick={handleYoutubeShorts} className="w-auto h-12 flex items-center gap-2 rounded-lg border-[1px] border-gray-400 hover:border-red-400 mr-4 px-4 cursor-pointer">
                 <Icon icon="logos:youtube-icon" />
-                <span>Youtube</span>
+                <span>Youtube Shorts</span>
               </div>
             </div>
 
@@ -221,10 +327,12 @@ const SocialMediaSelection = () => {
 
           {/* Media Content */}
           <div className="w-full h-[full] bg-gray-100 rounded-lg overflow-hidden">
-            {mediaItem?.src?.endsWith(".mp4") ? (
+            {mediaItem?.type === 'video' ? (
               <video
                 src={mediaItem?.src}
                 className="w-full h-full object-cover"
+                autoPlay
+                loop
               />
             ) : (
               <img

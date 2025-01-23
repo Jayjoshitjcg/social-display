@@ -9,6 +9,8 @@ const template4 = require(`../../Assets/images/Template-4.jpg`);
 const template5 = require(`../../Assets/images/Template-5.jpg`);
 const template6 = require(`../../Assets/images/Template-6.jpg`);
 const template7 = require(`../../Assets/images/Template-7.jpg`);
+const templateVideo1 = require(`../../Assets/images/Template-video1.mp4`);
+const templateVideo2 = require(`../../Assets/images/Template-video2.mp4`);
 
 const TemplatePage = () => {
     const [mediaItems, setMediaItems] = useState([]);
@@ -18,18 +20,18 @@ const TemplatePage = () => {
     useEffect(() => {
         const fetchMediaItems = async () => {
             const images = [
-                { id: 1, src: template1 },
-                { id: 2, src: template2 },
-                { id: 3, src: template3 },
-                { id: 4, src: template4 },
-                { id: 5, src: template5 },
-                { id: 6, src: template6 },
-                { id: 7, src: template7 },
+                { id: 1, src: template1, type: 'image' },
+                { id: 2, src: template2, type: 'image' },
+                { id: 3, src: template3, type: 'image' },
+                { id: 4, src: template4, type: 'image' },
+                { id: 5, src: template5, type: 'image' },
+                { id: 6, src: template6, type: 'image' },
+                { id: 7, src: template7, type: 'image' },
             ];
 
             const videos = [
-                { id: 'v1', src: '/path/to/videos/video1.mp4' },
-                { id: "v2", src: '/path/to/videos/video2.mp4' },
+                { id: 'v1', src: templateVideo1, type: 'video' },
+                { id: "v2", src: templateVideo2, type: 'video' },
             ];
 
             setMediaItems([...images, ...videos]);
@@ -63,10 +65,12 @@ const TemplatePage = () => {
                         className="relative flex justify-center items-center cursor-pointer"
                         onClick={() => handleMediaClick(item)}
                     >
-                        {item?.src?.endsWith('.mp4' || 'WEBM') ? (
+                        {item?.type === 'video' ? (
                             <video
                                 src={item?.src}
                                 className="w-full h-auto object-cover rounded-lg shadow-lg"
+                                autoPlay
+                                loop
                             />
                         ) : (
                             <img
