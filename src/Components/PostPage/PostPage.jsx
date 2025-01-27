@@ -1,11 +1,15 @@
+//React Imports
+
+
+
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../../Context/AppContext";
 import { Icon } from "@iconify/react";
 import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import styled from "styled-components";
 import { gapi } from "gapi-script";
+import "react-datepicker/dist/react-datepicker.css";
 
 
 const StyledDatePickerWrapper = styled.div`
@@ -27,21 +31,13 @@ const StyledDatePickerWrapper = styled.div`
 
 
 const PostPage = () => {
+
     const navigate = useNavigate();
-
-    const { mediaItem } = useContext(AppContext);
-
-    // const socialMediaAccounts = [
-    //     { id: "fb", name: "Facebook Page", selected: false },
-    //     { id: "insta", name: "Instagram Page", selected: false },
-    // ]
-
-    const { user, userPages, setUserPages } = useContext(AppContext)
+    const { user, userPages, setUserPages, mediaItem } = useContext(AppContext)
 
     const [showCaptionInput, setShowCaptionInput] = useState(false);
     const [captions, setCaptions] = useState({});
     const [loading, setLoading] = useState(false);
-    const [postType, setPostType] = useState("post");
     const [selectedAccounts, setSelectedAccounts] = useState([]);
     const [scheduledTime, setScheduledTime] = useState(null);
     const [isScheduling, setIsScheduling] = useState(null);
@@ -214,32 +210,61 @@ const PostPage = () => {
                 if (pagePlatformType === "Facebook") {
                     // Publish post if isPost is true or if both is true
                     if (isPost || (isPost && isStory)) {
-                        window.FB.api(
-                            `/${pageId}/photos`,
-                            "POST",
-                            {
-                                url: "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg", // URL of the image to post
-                                // url: imageURL,
-                                caption: captions[account?.page?.id] || "", // Caption to post with the image
-                                access_token: foundPage.accessToken, // Page access token
-                            },
-                            (response) => {
-                                if (response && !response.error) {
-                                    console.log(`Successfully posted to page ${foundPage.name}`);
-                                    alert(`Successfully posted to ${foundPage.name}`);
-                                    navigate("/")
-                                } else {
-                                    console.error(
-                                        `Error posting to page ${foundPage.name}:`,
-                                        response.error
-                                    );
-                                    alert(
-                                        `Failed to post to ${foundPage.name}. Please check the console for details.`
-                                    );
+                        if (mediaItem.type === "video") {
+                            // Post a video to Facebook
+                            window.FB.api(
+                                `/${pageId}/videos`,
+                                "POST",
+                                {
+                                    file_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4", // URL of the video to post
+                                    description: captions[account?.page?.id] || "", // Description/caption for the video
+                                    access_token: foundPage.accessToken, // Page access token
+                                },
+                                (response) => {
+                                    if (response && !response.error) {
+                                        console.log(`Successfully posted video to page ${foundPage.name}`);
+                                        alert(`Successfully posted video to ${foundPage.name}`);
+                                        navigate("/");
+                                    } else {
+                                        console.error(
+                                            `Error posting video to page ${foundPage.name}:`,
+                                            response.error
+                                        );
+                                        alert(
+                                            `Failed to post video to ${foundPage.name}. Please check the console for details.`
+                                        );
+                                    }
                                 }
-                            }
-                        );
+                            );
+                        } else if (mediaItem.type === "image") {
+                            // Post an image to Facebook
+                            window.FB.api(
+                                `/${pageId}/photos`,
+                                "POST",
+                                {
+                                    url: "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg", // URL of the image to post
+                                    caption: captions[account?.page?.id] || "", // Caption to post with the image
+                                    access_token: foundPage.accessToken, // Page access token
+                                },
+                                (response) => {
+                                    if (response && !response.error) {
+                                        console.log(`Successfully posted image to page ${foundPage.name}`);
+                                        alert(`Successfully posted image to ${foundPage.name}`);
+                                        navigate("/");
+                                    } else {
+                                        console.error(
+                                            `Error posting image to page ${foundPage.name}:`,
+                                            response.error
+                                        );
+                                        alert(
+                                            `Failed to post image to ${foundPage.name}. Please check the console for details.`
+                                        );
+                                    }
+                                }
+                            );
+                        }
                     }
+
 
                     // Publish story if isStory is true or if both is true
                     if (isStory || (isPost && isStory)) {
@@ -248,7 +273,7 @@ const PostPage = () => {
                             `/${pageId}/photos`,
                             "POST",
                             {
-                                url: "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg", // URL of the photo to upload
+                                url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4", // URL of the photo to upload
                                 access_token: foundPage.accessToken, // Page access token
                                 published: false,
                             },
@@ -401,36 +426,44 @@ const PostPage = () => {
 
                         // Prepare the form data for the request
                         const formData = new FormData();
+                        formData.append("snippet", JSON.stringify(metadata.snippet));
+                        formData.append("status", JSON.stringify(metadata.status));
 
-                        // Append metadata as JSON string directly to form data
-                        // formData.append("metadata", JSON.stringify(metadata));
+                        // Append video file
+                        const videoFile = await fetch(
+                            "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+                        ).then((res) => res.blob());
+                        formData.append("media", videoFile, "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4");
 
-                        // Append video file URL or file object (in this case, use the actual video file instead of a URL)
-                        const videoFile = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
-                        formData.append("video", videoFile);
+                        console.log("Access Token:", user?.accessToken);
 
-                        // Make the API request
-                        const response = await gapi.client.request({
-                            path: "https://www.googleapis.com/upload/youtube/v3/videos",
-                            method: "POST",
-                            params: {
-                                uploadType: "multipart",
-                                part: "snippet,status",
-                            },
-                            headers: {
-                                Authorization: `Bearer ${user?.accessToken}`,
-                                ContentType: 'application/json'
-                            },
-                            body: formData,
-                        });
+                        // Make the API request using fetch
+                        const response = await fetch(
+                            "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status",
+                            {
+                                method: "POST",
+                                headers: {
+                                    Authorization: `Bearer ${user?.accessToken}`,
+                                },
+                                body: formData,
+                            }
+                        );
 
-                        console.log("Video uploaded successfully:", response);
-                        alert(`Video successfully uploaded to YouTube channel ${foundPage.name}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            console.log("Video uploaded successfully:", data);
+                            alert(`Video successfully uploaded to YouTube channel ${foundPage.name}`);
+                        } else {
+                            const error = await response.json();
+                            console.error("Failed to upload video to YouTube:", error);
+                            alert(`Failed to upload video to YouTube channel ${foundPage.name}`);
+                        }
                     } catch (error) {
-                        console.error("Failed to upload video to YouTube:", error);
-                        alert(`Failed to upload video to YouTube channel ${foundPage.name}`);
+                        console.error("Error uploading video to YouTube:", error);
+                        alert(`Error uploading video to YouTube channel ${foundPage.name}`);
                     }
                 }
+
                 setLoading(false);
             } else {
                 console.error(`No access token found for page ${foundPage?.name || pageId}`);
@@ -684,8 +717,8 @@ const PostPage = () => {
                                         </div>
                                     </div>
                                     <ul className="flex flex-col items-start gap-4">
-                                        {userPages?.map((page) => (
-                                            <li key={page?.id} className="flex items-center gap-4">
+                                        {userPages?.map((page, index) => (
+                                            <li key={`${page?.id}-${index}`} className="flex items-center gap-4">
                                                 <input
                                                     type="checkbox"
                                                     id={`social-${page?.id}`}
