@@ -17,8 +17,8 @@ import { gapi } from "gapi-script";
 function App() {
 
   // Youtube/Google 
-  const CLIENT_ID = "710913804646-25f7lm69id3grhucdbeobu5b0mms0r4r.apps.googleusercontent.com";
-  const API_KEY = "AIzaSyBCOqPJ9UyZVCn21X7Og9WX8j7Rl0DwSsQ";
+  const CLIENT_ID = "758113446784-pdtdcu1u0or8ai2i93leke18dhfhoqcg.apps.googleusercontent.com";
+  const API_KEY = "AIzaSyB98bfkPweLxFj3VIqaB9gPg5WQS0EJoW4";
   const SCOPES = "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly";
 
   const initGoogleAPI = () => {

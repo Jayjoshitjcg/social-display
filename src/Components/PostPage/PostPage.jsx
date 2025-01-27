@@ -406,7 +406,7 @@ const PostPage = () => {
                     }
                 }
 
-                // If the platform is Youtube
+                // If the platform is YouTube
                 else if (pagePlatformType === "Youtube") {
                     try {
                         // Define the metadata for the YouTube video
@@ -426,14 +426,25 @@ const PostPage = () => {
 
                         // Prepare the form data for the request
                         const formData = new FormData();
+
+                        // Append metadata as JSON string directly to form data
                         formData.append("snippet", JSON.stringify(metadata.snippet));
                         formData.append("status", JSON.stringify(metadata.status));
 
-                        // Append video file
-                        const videoFile = await fetch(
-                            "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-                        ).then((res) => res.blob());
-                        formData.append("media", videoFile, "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4");
+                        // Fetch the video file through the proxy server
+                        const videoFile = await fetch("http://localhost:5000/proxy/video")
+                            .then((res) => res.blob()) // Convert to Blob format
+                            .catch((error) => {
+                                throw new Error("Failed to fetch video file through proxy server");
+                            });
+
+                        console.log("jay Video file==>", videoFile)
+
+                        formData.append("media", videoFile, "video-1.mp4");
+
+
+                        // Append the video file to the form data
+                        formData.append("media", videoFile, "video-1.mp4");
 
                         console.log("Access Token:", user?.accessToken);
 
@@ -443,9 +454,9 @@ const PostPage = () => {
                             {
                                 method: "POST",
                                 headers: {
-                                    Authorization: `Bearer ${user?.accessToken}`,
+                                    Authorization: `Bearer ${user?.accessToken}`, // Add the Bearer token
                                 },
-                                body: formData,
+                                body: formData, // Attach the form data with metadata and video file
                             }
                         );
 
@@ -463,6 +474,7 @@ const PostPage = () => {
                         alert(`Error uploading video to YouTube channel ${foundPage.name}`);
                     }
                 }
+
 
                 setLoading(false);
             } else {
