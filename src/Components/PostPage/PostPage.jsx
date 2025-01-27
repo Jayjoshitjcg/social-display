@@ -8,7 +8,6 @@ import { AppContext } from "../../Context/AppContext";
 import { Icon } from "@iconify/react";
 import DatePicker from "react-datepicker";
 import styled from "styled-components";
-import { gapi } from "gapi-script";
 import "react-datepicker/dist/react-datepicker.css";
 
 
@@ -53,6 +52,7 @@ const PostPage = () => {
 
     console.log("userPages==>", userPages)
     console.log("selectedAccounts==>", selectedAccounts)
+    console.log("Media Items==>", mediaItem)
 
 
     if (!mediaItem) {
@@ -320,44 +320,63 @@ const PostPage = () => {
                     // Instagram post and story logic
                     if (isPost || (isPost && isStory)) {
                         console.log(`Posting to Instagram page ${foundPage.name} as post. with ${foundPage.accessToken}`);
-                        window.FB.api(
-                            `/${foundPage.id}/media`,
-                            "POST",
-                            {
-                                // image_url: imageURL, // URL of the image to post
-                                image_url: "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg", // Testing URL of the image to post
-                                caption: captions[account?.page?.id] || "", // Caption to post with the image
-                                access_token: foundPage.accessToken,
-                            },
-                            (mediaResponse) => {
-                                if (mediaResponse && !mediaResponse.error) {
-                                    console.log("Successfully created media:", mediaResponse);
 
-                                    // Now, publish the media to Instagram
-                                    window.FB.api(
-                                        `/${foundPage.id}/media_publish`,
-                                        "POST",
-                                        {
-                                            creation_id: mediaResponse.id, // Use the created media ID
-                                            access_token: foundPage.accessToken,
-                                        },
-                                        (publishResponse) => {
-                                            if (publishResponse && !publishResponse.error) {
-                                                console.log(`Successfully posted to Instagram page ${foundPage.name}`);
-                                                alert(`Successfully posted to Instagram ${foundPage.name}`);
-                                            } else {
-                                                console.error(`Error posting to Instagram page ${foundPage.name}:`, publishResponse.error);
-                                                alert(`Failed to post to Instagram ${foundPage.name}. Please check the console for details.`);
+                        // Ensure mediaItem.type is either "image" or "video"
+                        let mediaUrl = null;
+                        if (mediaItem.type === "image") {
+                            mediaUrl = "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg"; // Replace with actual image URL
+                        } else if (mediaItem.type === "video") {
+                            mediaUrl = "https://1roos.com/videos/video-3.mp4"; // Replace with actual video URL
+                        }
+                        console.log("jay Media URL==>", mediaUrl)
+
+                        if (mediaUrl) {
+                            const payload = {
+                                image_url: mediaItem.type === "image" ? mediaUrl : null, // Image URL for image posts
+                                video_url: mediaItem.type === "video" ? mediaUrl : null, // Video URL for video posts
+                                caption: captions[account?.page?.id] || "", // Caption to post with the media
+                                access_token: foundPage.accessToken,
+                            };
+
+                            window.FB.api(
+                                `/${foundPage.id}/media`,
+                                "POST",
+                                payload,
+                                (mediaResponse) => {
+                                    if (mediaResponse && !mediaResponse.error) {
+                                        console.log("Successfully created media:", mediaResponse);
+
+                                        // Now, publish the media to Instagram
+                                        window.FB.api(
+                                            `/${foundPage.id}/media_publish`,
+                                            "POST",
+                                            {
+                                                creation_id: mediaResponse.id, // Use the created media ID
+                                                access_token: foundPage.accessToken,
+                                            },
+                                            (publishResponse) => {
+                                                if (publishResponse && !publishResponse.error) {
+                                                    console.log(`Successfully posted to Instagram page ${foundPage.name}`);
+                                                    alert(`Successfully posted to Instagram ${foundPage.name}`);
+                                                } else {
+                                                    console.error(`Error posting to Instagram page ${foundPage.name}:`, publishResponse.error);
+                                                    alert(`Failed to post to Instagram ${foundPage.name}. Please check the console for details.`);
+                                                }
                                             }
-                                        }
-                                    );
-                                } else {
-                                    console.error("Error creating media for Instagram:", mediaResponse.error);
-                                    alert("Failed to create media for Instagram. Please check the console for details.");
+                                        );
+                                    } else {
+                                        console.error("Error creating media for Instagram:", mediaResponse.error);
+                                        alert("Failed to create media for Instagram. Please check the console for details.");
+                                    }
                                 }
-                            }
-                        );
+                            );
+                        } else {
+                            console.error("Unsupported media type:", mediaItem.type);
+                            alert("Unsupported media type. Please check the console for details.");
+                        }
                     }
+
+
 
                     if (isStory || (isPost && isStory)) {
                         console.log(`Posting to Instagram page ${foundPage.name} as story.`);
@@ -438,15 +457,11 @@ const PostPage = () => {
                                 throw new Error("Failed to fetch video file through proxy server");
                             });
 
-                        console.log("jay Video file==>", videoFile)
-
                         formData.append("media", videoFile, "video-1.mp4");
 
 
                         // Append the video file to the form data
                         formData.append("media", videoFile, "video-1.mp4");
-
-                        console.log("Access Token:", user?.accessToken);
 
                         // Make the API request using fetch
                         const response = await fetch(
