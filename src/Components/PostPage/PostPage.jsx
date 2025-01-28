@@ -9,6 +9,7 @@ import { Icon } from "@iconify/react";
 import DatePicker from "react-datepicker";
 import styled from "styled-components";
 import "react-datepicker/dist/react-datepicker.css";
+import { gapi } from "gapi-script";
 
 
 const StyledDatePickerWrapper = styled.div`
@@ -320,63 +321,44 @@ const PostPage = () => {
                     // Instagram post and story logic
                     if (isPost || (isPost && isStory)) {
                         console.log(`Posting to Instagram page ${foundPage.name} as post. with ${foundPage.accessToken}`);
-
-                        // Ensure mediaItem.type is either "image" or "video"
-                        let mediaUrl = null;
-                        if (mediaItem.type === "image") {
-                            mediaUrl = "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg"; // Replace with actual image URL
-                        } else if (mediaItem.type === "video") {
-                            mediaUrl = "https://1roos.com/videos/video-3.mp4"; // Replace with actual video URL
-                        }
-                        console.log("jay Media URL==>", mediaUrl)
-
-                        if (mediaUrl) {
-                            const payload = {
-                                image_url: mediaItem.type === "image" ? mediaUrl : null, // Image URL for image posts
-                                video_url: mediaItem.type === "video" ? mediaUrl : null, // Video URL for video posts
-                                caption: captions[account?.page?.id] || "", // Caption to post with the media
+                        window.FB.api(
+                            `/${foundPage.id}/media`,
+                            "POST",
+                            {
+                                // image_url: imageURL, // URL of the image to post
+                                image_url: "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg", // Testing URL of the image to post
+                                caption: captions[account?.page?.id] || "", // Caption to post with the image
                                 access_token: foundPage.accessToken,
-                            };
+                            },
+                            (mediaResponse) => {
+                                if (mediaResponse && !mediaResponse.error) {
+                                    console.log("Successfully created media:", mediaResponse);
 
-                            window.FB.api(
-                                `/${foundPage.id}/media`,
-                                "POST",
-                                payload,
-                                (mediaResponse) => {
-                                    if (mediaResponse && !mediaResponse.error) {
-                                        console.log("Successfully created media:", mediaResponse);
-
-                                        // Now, publish the media to Instagram
-                                        window.FB.api(
-                                            `/${foundPage.id}/media_publish`,
-                                            "POST",
-                                            {
-                                                creation_id: mediaResponse.id, // Use the created media ID
-                                                access_token: foundPage.accessToken,
-                                            },
-                                            (publishResponse) => {
-                                                if (publishResponse && !publishResponse.error) {
-                                                    console.log(`Successfully posted to Instagram page ${foundPage.name}`);
-                                                    alert(`Successfully posted to Instagram ${foundPage.name}`);
-                                                } else {
-                                                    console.error(`Error posting to Instagram page ${foundPage.name}:`, publishResponse.error);
-                                                    alert(`Failed to post to Instagram ${foundPage.name}. Please check the console for details.`);
-                                                }
+                                    // Now, publish the media to Instagram
+                                    window.FB.api(
+                                        `/${foundPage.id}/media_publish`,
+                                        "POST",
+                                        {
+                                            creation_id: mediaResponse.id, // Use the created media ID
+                                            access_token: foundPage.accessToken,
+                                        },
+                                        (publishResponse) => {
+                                            if (publishResponse && !publishResponse.error) {
+                                                console.log(`Successfully posted to Instagram page ${foundPage.name}`);
+                                                alert(`Successfully posted to Instagram ${foundPage.name}`);
+                                            } else {
+                                                console.error(`Error posting to Instagram page ${foundPage.name}:`, publishResponse.error);
+                                                alert(`Failed to post to Instagram ${foundPage.name}. Please check the console for details.`);
                                             }
-                                        );
-                                    } else {
-                                        console.error("Error creating media for Instagram:", mediaResponse.error);
-                                        alert("Failed to create media for Instagram. Please check the console for details.");
-                                    }
+                                        }
+                                    );
+                                } else {
+                                    console.error("Error creating media for Instagram:", mediaResponse.error);
+                                    alert("Failed to create media for Instagram. Please check the console for details.");
                                 }
-                            );
-                        } else {
-                            console.error("Unsupported media type:", mediaItem.type);
-                            alert("Unsupported media type. Please check the console for details.");
-                        }
+                            }
+                        );
                     }
-
-
 
                     if (isStory || (isPost && isStory)) {
                         console.log(`Posting to Instagram page ${foundPage.name} as story.`);
@@ -431,66 +413,57 @@ const PostPage = () => {
                         // Define the metadata for the YouTube video
                         const metadata = {
                             snippet: {
-                                title: "My YouTube Short",
-                                description: "This is a short uploaded via the API",
-                                tags: ["shorts", "example", "api"],
-                                channelId: foundPage.id, // Ensure the correct channelId
-                                categoryId: "22",
+                                title: "My YouTube Short", // Video title
+                                description: "This is a short uploaded via the API", // Video description
+                                tags: ["shorts", "example", "api"], // Video tags
+                                categoryId: "22", // YouTube video category (e.g., People & Blogs)
                             },
                             status: {
-                                privacyStatus: "public",
-                                madeForKids: false,
+                                privacyStatus: "public", // Set privacy status: 'public', 'private', or 'unlisted'
+                                madeForKids: false, // Set whether the video is made for kids
                             },
                         };
 
-                        // Prepare the form data for the request
-                        const formData = new FormData();
-
-                        // Append metadata as JSON string directly to form data
-                        formData.append("snippet", JSON.stringify(metadata.snippet));
-                        formData.append("status", JSON.stringify(metadata.status));
-
                         // Fetch the video file through the proxy server
                         const videoFile = await fetch("http://localhost:5000/proxy/video")
-                            .then((res) => res.blob()) // Convert to Blob format
+                            .then((res) => {
+                                if (!res.ok) {
+                                    throw new Error("Failed to fetch video file through proxy server");
+                                }
+                                return res.blob(); // Ensure to return the Blob
+                            })
                             .catch((error) => {
                                 throw new Error("Failed to fetch video file through proxy server");
                             });
 
-                        formData.append("media", videoFile, "video-1.mp4");
+                        console.log("jay videoFile type==>", videoFile)
+                        // Create a file object to use with gapi
+                        const file = new File([videoFile], "video-1.mp4", { type: "video/mp4" });
 
+                        // Use gapi client library to insert the video
+                        const request = gapi.client.youtube.videos.insert({
+                            part: "snippet,status", // Specify which parts of the video metadata to include
+                            resource: metadata, // Attach video metadata (snippet and status)
+                            media: {
+                                body: file, // Attach the video file
+                            },
+                        });
 
-                        // Append the video file to the form data
-                        formData.append("media", videoFile, "video-1.mp4");
-
-                        // Make the API request using fetch
-                        const response = await fetch(
-                            "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status",
-                            {
-                                method: "POST",
-                                headers: {
-                                    Authorization: `Bearer ${user?.accessToken}`, // Add the Bearer token
-                                },
-                                body: formData, // Attach the form data with metadata and video file
+                        // Execute the API request
+                        request.execute((response) => {
+                            if (response && response.id) {
+                                console.log("Video uploaded successfully:", response.id);
+                                alert(`Video successfully uploaded to YouTube channel ${foundPage.name}`);
+                            } else {
+                                console.error("Error uploading video:", response);
+                                alert(`Failed to upload video to YouTube channel ${foundPage.name}`);
                             }
-                        );
-
-                        if (response.ok) {
-                            const data = await response.json();
-                            console.log("Video uploaded successfully:", data);
-                            alert(`Video successfully uploaded to YouTube channel ${foundPage.name}`);
-                        } else {
-                            const error = await response.json();
-                            console.error("Failed to upload video to YouTube:", error);
-                            alert(`Failed to upload video to YouTube channel ${foundPage.name}`);
-                        }
+                        });
                     } catch (error) {
                         console.error("Error uploading video to YouTube:", error);
                         alert(`Error uploading video to YouTube channel ${foundPage.name}`);
                     }
                 }
-
-
                 setLoading(false);
             } else {
                 console.error(`No access token found for page ${foundPage?.name || pageId}`);
