@@ -19,7 +19,7 @@ function App() {
   // Youtube/Google 
   const CLIENT_ID = "758113446784-pdtdcu1u0or8ai2i93leke18dhfhoqcg.apps.googleusercontent.com";
   const API_KEY = "AIzaSyB98bfkPweLxFj3VIqaB9gPg5WQS0EJoW4";
-  const SCOPES = "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube";
+  const SCOPES = "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly";
 
   const initGoogleAPI = () => {
     gapi.load("client:auth2", () => {

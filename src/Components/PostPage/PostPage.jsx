@@ -1,7 +1,4 @@
 //React Imports
-
-
-
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../../Context/AppContext";
@@ -191,8 +188,7 @@ const PostPage = () => {
 
         for (const account of selectedAccounts) {
             const { page, pagePlatformType, isPost, isStory } = account;
-            const pageId = page.id; // Accessing pageId from the page object
-            console.log("pagePlateformType==>", pagePlatformType)
+            const pageId = page.id;
 
             const foundPage = userPages.find((p) => p.id === pageId);
 
@@ -201,7 +197,7 @@ const PostPage = () => {
                 alert(`Cannot post to page with ID: ${pageId}`);
                 setLoading(false);
                 return;
-            } console.log("Found page:", foundPage); // Debugging log for the found page
+            }
 
             const imageURL = `${window.location.origin}/images/${mediaItem.src}`;
             // console.log("Image URL:", imageURL);
@@ -410,17 +406,13 @@ const PostPage = () => {
                 // If the platform is YouTube
                 else if (pagePlatformType === "Youtube") {
                     try {
-                        // Define the metadata for the YouTube video
                         const metadata = {
                             snippet: {
-                                title: "My YouTube Short", // Video title
-                                description: "This is a short uploaded via the API", // Video description
-                                tags: ["shorts", "example", "api"], // Video tags
-                                categoryId: "22", // YouTube video category (e.g., People & Blogs)
+                                title: "My YouTube Short",
+                                description: "This is a short uploaded via the API",
                             },
                             status: {
-                                privacyStatus: "public", // Set privacy status: 'public', 'private', or 'unlisted'
-                                madeForKids: false, // Set whether the video is made for kids
+                                privacyStatus: "public",
                             },
                         };
 
@@ -430,7 +422,7 @@ const PostPage = () => {
                                 if (!res.ok) {
                                     throw new Error("Failed to fetch video file through proxy server");
                                 }
-                                return res.blob(); // Ensure to return the Blob
+                                return res.blob();
                             })
                             .catch((error) => {
                                 throw new Error("Failed to fetch video file through proxy server");
@@ -438,14 +430,15 @@ const PostPage = () => {
 
                         console.log("jay videoFile type==>", videoFile)
                         // Create a file object to use with gapi
-                        const file = new File([videoFile], "video-1.mp4", { type: "video/mp4" });
+                        const file = new File([videoFile], "video-3.mp4", { type: "video/mp4" });
+                        console.log("jay File==>", file)
 
                         // Use gapi client library to insert the video
                         const request = gapi.client.youtube.videos.insert({
-                            part: "snippet,status", // Specify which parts of the video metadata to include
-                            resource: metadata, // Attach video metadata (snippet and status)
+                            part: "snippet,status",
+                            resource: metadata,
                             media: {
-                                body: file, // Attach the video file
+                                body: file,
                             },
                         });
 
