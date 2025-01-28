@@ -103,7 +103,6 @@ const SocialMediaSelection = () => {
     }
   };
 
-
   const handleYoutubeShorts = async () => {
     if (mediaItem) {
       if (mediaItem.type !== 'video') {
@@ -123,7 +122,6 @@ const SocialMediaSelection = () => {
       navigate("/postpage");
     }
   }
-
 
   const handleFacebookLogin = () => {
     if (!logedInUser) {
@@ -280,7 +278,9 @@ const SocialMediaSelection = () => {
     }
   };
 
+  const handleTiktokClick = () => {
 
+  }
 
 
 
@@ -309,6 +309,10 @@ const SocialMediaSelection = () => {
               <div onClick={handleYoutubeShorts} className="w-auto h-12 flex items-center gap-2 rounded-lg border-[1px] border-gray-400 hover:border-red-400 mr-4 px-4 cursor-pointer">
                 <Icon icon="logos:youtube-icon" />
                 <span>Youtube Shorts</span>
+              </div>
+              <div onClick={handleTiktokClick} className="w-auto h-12 flex items-center gap-2 rounded-lg border-[1px] border-gray-400 hover:border-red-400 mr-4 px-4 cursor-pointer">
+                <Icon icon="logos:tiktok-icon" />
+                <span>Tiktok</span>
               </div>
             </div>
 

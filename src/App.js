@@ -13,6 +13,7 @@ import TemplatePage from "./Components/TemplatePage/TemplatePage";
 import PostPage from "./Components/PostPage/PostPage";
 import SocialMediaSelection from "./Components/SocialMediaSelection/SocialMediaSelection";
 import { gapi } from "gapi-script";
+import TikTokVerification from "./Components/Tiktok/TikTokVerification";
 
 function App() {
 
@@ -58,9 +59,10 @@ function App() {
             <Route path="/home" element={<Feed />} />
             <Route path="/create-post" element={<CreatePost />} />
             <Route path="/instagram-callback" element={<InstagramCallbackPage />} /> */}
-            < Route path="/" element={<TemplatePage />} />
+            <Route path="/" element={<TemplatePage />} />
             <Route path="/socialmedia" element={<SocialMediaSelection />} />
-            < Route path="/postpage" element={<PostPage />} />
+            <Route path="/postpage" element={<PostPage />} />
+            <Route path="/tiktok_verification.txt" element={<TikTokVerification />} />
           </Routes>
         </div>
       </Router>
