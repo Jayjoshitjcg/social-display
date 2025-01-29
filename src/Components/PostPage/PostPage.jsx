@@ -454,24 +454,24 @@ const PostPage = () => {
                         console.log("jay metadata==>", metadata)
 
                         // Use gapi client library to insert the video
-                        // const request = gapi.client.youtube.videos.insert({
-                        //     part: "snippet,status",
-                        //     resource: metadata,
-                        //     media: {
-                        //         body: file,
-                        //     },
-                        // });
+                        const request = gapi.client.youtube.videos.insert({
+                            part: "snippet,status",
+                            resource: metadata,
+                            media: {
+                                body: file,
+                            },
+                        });
 
-                        // // Execute the API request
-                        // request.execute((response) => {
-                        //     if (response && response.id) {
-                        //         console.log("Video uploaded successfully:", response.id);
-                        //         alert(`Video successfully uploaded to YouTube channel ${foundPage.name}`);
-                        //     } else {
-                        //         console.error("Error uploading video:", response);
-                        //         alert(`Failed to upload video to YouTube channel ${foundPage.name}`);
-                        //     }
-                        // });
+                        // Execute the API request
+                        request.execute((response) => {
+                            if (response && response.id) {
+                                console.log("Video uploaded successfully:", response.id);
+                                alert(`Video successfully uploaded to YouTube channel ${foundPage.name}`);
+                            } else {
+                                console.error("Error uploading video:", response);
+                                alert(`Failed to upload video to YouTube channel ${foundPage.name}`);
+                            }
+                        });
                     } catch (error) {
                         console.error("Error uploading video to YouTube:", error);
                         alert(`Error uploading video to YouTube channel ${foundPage.name}`);
