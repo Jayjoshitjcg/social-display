@@ -49,10 +49,10 @@ const PostPage = () => {
     }, []);
 
 
-    console.log("user=========>", user)
-    console.log("userPages==>", userPages)
-    console.log("selectedAccounts==>", selectedAccounts)
-    console.log("Media Items==>", mediaItem)
+    // console.log("user=========>", user)
+    // console.log("userPages==>", userPages)
+    // console.log("selectedAccounts==>", selectedAccounts)
+    // console.log("Media Items==>", mediaItem)
 
 
     if (!mediaItem) {
@@ -204,6 +204,81 @@ const PostPage = () => {
             const imageURL = `${window.location.origin}/images/${mediaItem.src}`;
             // console.log("Image URL:", imageURL);
 
+            function uploadAndPublishVideo(videoUrl, caption, accessToken, pageId) {
+                console.log(`Uploading video to Instagram page ${pageId}...`);
+
+                window.FB.api(
+                    `/${pageId}/media`,
+                    "POST",
+                    {
+                        media_type: "REELS",
+                        video_url: videoUrl,
+                        caption: caption || "",
+                        access_token: accessToken,
+                    },
+                    (mediaResponse) => {
+                        if (mediaResponse && !mediaResponse.error) {
+                            console.log("Video upload started:", mediaResponse);
+                            const mediaId = mediaResponse.id;
+
+                            // Wait for processing to complete
+                            checkMediaStatusAndPublish(mediaId, accessToken, pageId);
+                        } else {
+                            console.error("Error uploading video:", mediaResponse.error);
+                        }
+                    }
+                );
+            }
+
+            function checkMediaStatusAndPublish(mediaId, accessToken, pageId, attempt = 0) {
+                setLoading(true)
+                if (attempt > 20) {  // Increase max attempts to 20 (100 seconds max)
+                    console.error("Max attempts reached. Media is not ready.");
+                    alert("Failed to publish video. Please try again later.");
+                    return;
+                }
+
+                setTimeout(() => {
+                    console.log(`${attempt + 1}`);
+
+                    window.FB.api(
+                        `/${mediaId}?fields=status`,
+                        "GET",
+                        { access_token: accessToken },
+                        (statusResponse) => {
+                            console.log("Status Response:", statusResponse);
+
+                            if (statusResponse && statusResponse.status && statusResponse.status.includes("Finished")) {
+                                console.log("Media processing finished. Publishing now...");
+
+                                window.FB.api(
+                                    `/${pageId}/media_publish`,
+                                    "POST",
+                                    {
+                                        creation_id: mediaId,
+                                        access_token: accessToken,
+                                    },
+                                    (publishResponse) => {
+                                        if (publishResponse && !publishResponse.error) {
+                                            setLoading(false)
+                                            // console.log(`Successfully posted video to Instagram page ${pageId}`);
+                                            alert(`Successfully posted to Instagram ${pageId}`);
+                                            navigate("/")
+                                        } else {
+                                            console.error("Error publishing video:", publishResponse.error);
+                                        }
+                                    }
+                                );
+                            } else {
+                                // console.log("Media still processing, checking again in 5 seconds...");
+                                checkMediaStatusAndPublish(mediaId, accessToken, pageId, attempt + 1);
+                            }
+                        }
+                    );
+                }, 5000);
+            }
+
+
             if (foundPage && foundPage?.accessToken) {
                 // If the platform is Facebook
                 if (pagePlatformType === "Facebook") {
@@ -318,91 +393,204 @@ const PostPage = () => {
                 else if (pagePlatformType === "Instagram") {
                     // Instagram post and story logic
                     if (isPost || (isPost && isStory)) {
-                        console.log(`Posting to Instagram page ${foundPage.name} as post. with ${foundPage.accessToken}`);
-                        window.FB.api(
-                            `/${foundPage.id}/media`,
-                            "POST",
-                            {
-                                // image_url: imageURL, // URL of the image to post
-                                image_url: "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg", // Testing URL of the image to post
-                                caption: captions[account?.page?.id] || "", // Caption to post with the image
-                                access_token: foundPage.accessToken,
-                            },
-                            (mediaResponse) => {
-                                if (mediaResponse && !mediaResponse.error) {
-                                    console.log("Successfully created media:", mediaResponse);
+                        console.log(`Posting to Instagram page ${foundPage.name} as post with ${foundPage.accessToken}`);
 
-                                    // Now, publish the media to Instagram
-                                    window.FB.api(
-                                        `/${foundPage.id}/media_publish`,
-                                        "POST",
-                                        {
-                                            creation_id: mediaResponse.id, // Use the created media ID
-                                            access_token: foundPage.accessToken,
-                                        },
-                                        (publishResponse) => {
-                                            if (publishResponse && !publishResponse.error) {
-                                                console.log(`Successfully posted to Instagram page ${foundPage.name}`);
-                                                alert(`Successfully posted to Instagram ${foundPage.name}`);
-                                            } else {
-                                                console.error(`Error posting to Instagram page ${foundPage.name}:`, publishResponse.error);
-                                                alert(`Failed to post to Instagram ${foundPage.name}. Please check the console for details.`);
-                                            }
-                                        }
-                                    );
-                                } else {
-                                    console.error("Error creating media for Instagram:", mediaResponse.error);
-                                    alert("Failed to create media for Instagram. Please check the console for details.");
+                        const mediaPayload = {
+                            caption: captions[account?.page?.id] || "", // Caption to post with the media
+                            access_token: foundPage.accessToken,
+                        };
+
+                        // Check if it's a video or image
+                        if (mediaItem.type === "video") {
+                            console.log("Posting a video (Reel) to Instagram");
+
+                            uploadAndPublishVideo(
+                                "https://1roos.com/videos/video-4.mp4",  // Replace with your video URL
+                                captions[account?.page?.id] || "",
+                                foundPage.accessToken,
+                                foundPage.id
+                            );
+                        } else if (mediaItem.type === "image") {
+                            console.log("Posting an image to Instagram");
+
+                            window.FB.api(
+                                `/${foundPage.id}/media`,
+                                "POST",
+                                {
+                                    caption: captions[account?.page?.id] || "",
+                                    media_type: "IMAGE",
+                                    image_url: "https://cdn.menuonline.com/preview/mycircle-digital-signage-2/mycircle-user-media/61efe5065c01e6626a7b6d68/demo%20viral_31386379.jpeg",
+                                    access_token: foundPage.accessToken,
+                                },
+                                (mediaResponse) => {
+                                    if (mediaResponse && !mediaResponse.error) {
+                                        console.log("Successfully created media container for image:", mediaResponse);
+
+                                        setTimeout(() => {
+                                            window.FB.api(
+                                                `/${foundPage.id}/media_publish`,
+                                                "POST",
+                                                {
+                                                    creation_id: mediaResponse.id,
+                                                    access_token: foundPage.accessToken,
+                                                },
+                                                (publishResponse) => {
+                                                    if (publishResponse && !publishResponse.error) {
+                                                        console.log(`Successfully posted image to Instagram page ${foundPage.name}`);
+                                                        alert(`Successfully posted image to Instagram ${foundPage.name}`);
+                                                    } else {
+                                                        console.error(`Error posting image to Instagram page ${foundPage.name}:`, publishResponse.error);
+                                                        alert(`Failed to post image to Instagram ${foundPage.name}. Please check the console for details.`);
+                                                    }
+                                                }
+                                            );
+                                        }, 5000);
+                                    } else {
+                                        console.error("Error creating image media container for Instagram:", mediaResponse.error);
+                                        alert("Failed to create image media container for Instagram. Please check the console for details.");
+                                    }
                                 }
-                            }
-                        );
+                            );
+                        }
+
                     }
 
                     if (isStory || (isPost && isStory)) {
-                        console.log(`Posting to Instagram page ${foundPage.name} as story.`);
-                        window.FB.api(
-                            `/${pageId}/photos`,
-                            "POST",
-                            {
-                                url: "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg", // URL of the photo to upload
-                                access_token: foundPage.accessToken, // Page access token
-                                published: false,
-                            },
-                            (uploadResponse) => {
-                                if (uploadResponse && !uploadResponse.error) {
-                                    console.log("Photo uploaded successfully:", uploadResponse);
+                        console.log(`📢 Posting a story to Instagram page ${foundPage.name}`);
 
-                                    // Step 2: Use the photo_id to create a story
-                                    const photoId = uploadResponse.id; // Extract the photo ID
-                                    window.FB.api(
-                                        `/${pageId}/photo_stories`,
-                                        "POST",
-                                        {
-                                            photo_id: photoId, // Use the photo ID from the upload response
-                                            access_token: foundPage.accessToken // Page access token
-                                        },
-                                        (storyResponse) => {
-                                            if (storyResponse && !storyResponse.error) {
-                                                console.log(`Successfully posted a story to page ${foundPage.name}`);
-                                                alert(`Successfully posted a story to ${foundPage.name}`);
-                                            } else {
-                                                console.error(
-                                                    `Error posting a story to page ${foundPage.name}:`,
-                                                    storyResponse.error
-                                                );
-                                                alert(
-                                                    `Failed to post a story to ${foundPage.name}. Please check the console for details.`
-                                                );
+                        const mediaPayload = {
+                            access_token: foundPage.accessToken,
+                        };
+
+                        // Function to check media status
+                        function checkMediaStatus(mediaId, callback) {
+                            const checkInterval = 5000; // Check every 5 seconds
+                            const maxAttempts = 20; // Max retries (100 seconds)
+
+                            let attempts = 0;
+
+                            console.log(`🔄 Checking media processing status for ID: ${mediaId}`);
+
+                            const interval = setInterval(() => {
+                                attempts++;
+
+                                window.FB.api(
+                                    `/${mediaId}?fields=status`,
+                                    "GET",
+                                    { access_token: foundPage.accessToken },
+                                    (statusResponse) => {
+                                        if (!statusResponse) {
+                                            console.error(`❌ [Attempt ${attempts}] Failed to fetch media status - No Response`);
+                                        } else if (statusResponse.error) {
+                                            console.error(`❌ [Attempt ${attempts}] API Error:`, statusResponse.error);
+                                        } else if (statusResponse.status) {
+                                            console.log(`📌 [Attempt ${attempts}] Media Status: "${statusResponse.status}"`);
+
+                                            if (statusResponse.status.includes("Finished")) {
+                                                clearInterval(interval);
+                                                console.log(`✅ Media processing completed in ${attempts * 5} seconds`);
+                                                callback(true); // ✅ Media is ready
+                                                return;
                                             }
                                         }
-                                    );
-                                } else {
-                                    console.error("Error uploading photo:", uploadResponse.error);
-                                    alert("Failed to upload photo. Please check the console for details.");
+
+                                        if (attempts >= maxAttempts) {
+                                            clearInterval(interval);
+                                            console.error(`❌ Timeout: Media not processed within ${maxAttempts * 5} seconds`);
+                                            callback(false); // ❌ Timeout reached
+                                        }
+                                    }
+                                );
+                            }, checkInterval);
+                        }
+
+                        // Function to publish media
+                        function publishMedia(mediaId) {
+                            console.log(`🚀 Publishing media with ID: ${mediaId}`);
+
+                            window.FB.api(
+                                `/${foundPage.id}/media_publish`,
+                                "POST",
+                                {
+                                    creation_id: mediaId,
+                                    access_token: foundPage.accessToken,
+                                },
+                                (publishResponse) => {
+                                    if (publishResponse && !publishResponse.error) {
+                                        console.log(`✅ Successfully posted a story to ${foundPage.name}`);
+                                        alert(`Successfully posted a story to ${foundPage.name}`);
+                                    } else {
+                                        console.error("❌ Error posting story:", publishResponse.error);
+                                        alert("Failed to post story. Check the console.");
+                                    }
                                 }
-                            }
-                        );
+                            );
+                        }
+
+                        // Check if media type is video or image
+                        if (mediaItem.type === "video") {
+                            console.log("🎥 Uploading video story to Instagram");
+
+                            window.FB.api(
+                                `/${foundPage.id}/media`,
+                                "POST",
+                                {
+                                    ...mediaPayload,
+                                    media_type: "STORIES",
+                                    video_url: "https://1roos.com/videos/story-video.mp4", // ✅ Replace with your video URL
+                                },
+                                (mediaResponse) => {
+                                    if (mediaResponse && !mediaResponse.error) {
+                                        console.log("✅ Video media container created:", mediaResponse);
+
+                                        // Poll the media status before publishing
+                                        checkMediaStatus(mediaResponse.id, (isReady) => {
+                                            if (isReady) {
+                                                publishMedia(mediaResponse.id);
+                                            } else {
+                                                console.error("❌ Media processing timeout. Could not publish.");
+                                                alert("Failed to publish story: media processing took too long.");
+                                            }
+                                        });
+                                    } else {
+                                        console.error("❌ Error creating story video media:", mediaResponse.error);
+                                        alert("Failed to create story video. Check the console.");
+                                    }
+                                }
+                            );
+                        } else {
+                            console.log("🖼️ Uploading image story to Instagram");
+
+                            window.FB.api(
+                                `/${foundPage.id}/media`,
+                                "POST",
+                                {
+                                    ...mediaPayload,
+                                    media_type: "STORIES",
+                                    image_url: "https://1roos.com/api/v1/uploads/user/1736913776159MUgI6mk2.jpg", // ✅ Replace with your image URL
+                                },
+                                (mediaResponse) => {
+                                    if (mediaResponse && !mediaResponse.error) {
+                                        console.log("✅ Image media container created:", mediaResponse);
+
+                                        // Poll the media status before publishing
+                                        checkMediaStatus(mediaResponse.id, (isReady) => {
+                                            if (isReady) {
+                                                publishMedia(mediaResponse.id);
+                                            } else {
+                                                console.error("❌ Media processing timeout. Could not publish.");
+                                                alert("Failed to publish story: media processing took too long.");
+                                            }
+                                        });
+                                    } else {
+                                        console.error("❌ Error creating story image media:", mediaResponse.error);
+                                        alert("Failed to create story image. Check the console.");
+                                    }
+                                }
+                            );
+                        }
                     }
+
                 }
 
                 // If the platform is YouTube
