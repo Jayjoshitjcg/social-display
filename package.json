@@ -5,6 +5,7 @@
   "dependencies": {
     "@amraneze/react-instagram-login": "^4.0.0",
     "@clerk/clerk-react": "^5.21.2",
+    "@react-oauth/google": "^0.12.1",
     "axios": "^1.7.9",
     "buffer": "^6.0.3",
     "cors": "^2.8.5",

@@ -59,12 +59,10 @@ const SocialMediaSelection = () => {
       const authResponse = authInstance.currentUser.get().getAuthResponse();
 
       // Log success message with authResponse
-      // console.log("User authenticated successfully:", authResponse);
       const jwt_Token = authResponse?.id_token;
       console.log("Google JWT Token:", authResponse)
 
       const extractedUserData = extractUserDataFromJWT(jwt_Token);
-      console.log("User Data::", extractedUserData);
       setUser({ ...extractedUserData, accessToken: authResponse?.access_token })
       localStorage.setItem(
         "LOGIN_USER",

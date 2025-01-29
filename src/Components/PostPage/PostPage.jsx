@@ -48,6 +48,8 @@ const PostPage = () => {
         });
     }, []);
 
+
+    console.log("user=========>", user)
     console.log("userPages==>", userPages)
     console.log("selectedAccounts==>", selectedAccounts)
     console.log("Media Items==>", mediaItem)
@@ -405,11 +407,15 @@ const PostPage = () => {
 
                 // If the platform is YouTube
                 else if (pagePlatformType === "Youtube") {
+                    gapi.client.setToken({ access_token: user?.accessToken });
+
                     try {
                         const metadata = {
                             snippet: {
                                 title: "My YouTube Short",
                                 description: "This is a short uploaded via the API",
+                                tags: ["shorts", "test"], // Optional: Add tags
+                                categoryId: "22", // Category ID for People & Blogs
                             },
                             status: {
                                 privacyStatus: "public",
@@ -417,46 +423,61 @@ const PostPage = () => {
                         };
 
                         // Fetch the video file through the proxy server
-                        const videoFile = await fetch("http://localhost:5000/proxy/video")
+                        // const videoFile = await fetch("http://localhost:5000/proxy/video")
+                        //     .then((res) => {
+                        //         if (!res.ok) {
+                        //             throw new Error("Failed to fetch video file through proxy server");
+                        //         }
+                        //         return res.blob();
+                        //     })
+                        //     .catch((error) => {
+                        //         throw new Error("Failed to fetch video file through proxy server");
+                        //     });
+
+                        const videoFile = await fetch(mediaItem?.src)
                             .then((res) => {
                                 if (!res.ok) {
-                                    throw new Error("Failed to fetch video file through proxy server");
+                                    throw new Error("Failed to fetch video file");
                                 }
-                                return res.blob();
+                                return res.blob(); // Convert response to Blob
                             })
                             .catch((error) => {
-                                throw new Error("Failed to fetch video file through proxy server");
+                                console.error("Error fetching video:", error);
+                                throw new Error("Failed to fetch video file");
                             });
 
-                        console.log("jay videoFile type==>", videoFile)
+                        console.log("Video File==>", videoFile)
+
                         // Create a file object to use with gapi
-                        const file = new File([videoFile], "video-3.mp4", { type: "video/mp4" });
+                        const file = new File([videoFile], "Template-videoSmall.mp4", { type: "video/mp4" });
                         console.log("jay File==>", file)
+                        console.log("jay metadata==>", metadata)
 
                         // Use gapi client library to insert the video
-                        const request = gapi.client.youtube.videos.insert({
-                            part: "snippet,status",
-                            resource: metadata,
-                            media: {
-                                body: file,
-                            },
-                        });
+                        // const request = gapi.client.youtube.videos.insert({
+                        //     part: "snippet,status",
+                        //     resource: metadata,
+                        //     media: {
+                        //         body: file,
+                        //     },
+                        // });
 
-                        // Execute the API request
-                        request.execute((response) => {
-                            if (response && response.id) {
-                                console.log("Video uploaded successfully:", response.id);
-                                alert(`Video successfully uploaded to YouTube channel ${foundPage.name}`);
-                            } else {
-                                console.error("Error uploading video:", response);
-                                alert(`Failed to upload video to YouTube channel ${foundPage.name}`);
-                            }
-                        });
+                        // // Execute the API request
+                        // request.execute((response) => {
+                        //     if (response && response.id) {
+                        //         console.log("Video uploaded successfully:", response.id);
+                        //         alert(`Video successfully uploaded to YouTube channel ${foundPage.name}`);
+                        //     } else {
+                        //         console.error("Error uploading video:", response);
+                        //         alert(`Failed to upload video to YouTube channel ${foundPage.name}`);
+                        //     }
+                        // });
                     } catch (error) {
                         console.error("Error uploading video to YouTube:", error);
                         alert(`Error uploading video to YouTube channel ${foundPage.name}`);
                     }
                 }
+
                 setLoading(false);
             } else {
                 console.error(`No access token found for page ${foundPage?.name || pageId}`);

@@ -11,6 +11,7 @@ const template6 = require(`../../Assets/images/Template-6.jpg`);
 const template7 = require(`../../Assets/images/Template-7.jpg`);
 const templateVideo1 = require(`../../Assets/images/Template-video1.mp4`);
 const templateVideo2 = require(`../../Assets/images/Template-video2.mp4`);
+const templateSmall = require(`../../Assets/images/Template-videoSmall.mp4`);
 
 const TemplatePage = () => {
     const [mediaItems, setMediaItems] = useState([]);
@@ -32,6 +33,7 @@ const TemplatePage = () => {
             const videos = [
                 { id: 'v1', src: templateVideo1, type: 'video' },
                 { id: "v2", src: templateVideo2, type: 'video' },
+                { id: "v3", src: templateSmall, type: 'video' },
             ];
 
             setMediaItems([...images, ...videos]);
