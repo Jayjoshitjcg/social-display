@@ -242,8 +242,6 @@ const SocialMediaSelection = () => {
                         type: "Instagram", // Add the type field as "Instagram"
                       }));
 
-
-
                       // Filter out Instagram pages already in localStorage
                       const storedPages = JSON.parse(localStorage.getItem("USER_PAGES")) || [];
                       const newPages = [
