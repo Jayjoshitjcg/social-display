@@ -45,7 +45,6 @@ const SocialMediaSelection = () => {
     };
   };
 
-
   const authenticate = async () => {
     try {
       const authInstance = gapi.auth2.getAuthInstance();
@@ -79,7 +78,6 @@ const SocialMediaSelection = () => {
     }
   };
 
-
   const fetchLinkedYouTubeAccounts = async () => {
     try {
       const response = await gapi.client.youtube.channels.list({
@@ -97,7 +95,7 @@ const SocialMediaSelection = () => {
       }
     } catch (error) {
       console.error("Failed to fetch linked YouTube accounts:", error);
-      throw error; // Re-throw the error for further handling
+      throw error;
     }
   };
 
@@ -274,9 +272,11 @@ const SocialMediaSelection = () => {
     }
   };
 
-  const handleTiktokClick = () => {
+  
+  const handleTikTokLogin = () => {
+    window.location.href = "http://localhost:5000/oauth";
+};
 
-  }
 
 
 
@@ -306,7 +306,7 @@ const SocialMediaSelection = () => {
                 <Icon icon="logos:youtube-icon" />
                 <span>Youtube Shorts</span>
               </div>
-              <div onClick={handleTiktokClick} className="w-auto h-12 flex items-center gap-2 rounded-lg border-[1px] border-gray-400 hover:border-red-400 mr-4 px-4 cursor-pointer">
+              <div onClick={handleTikTokLogin} className="w-auto h-12 flex items-center gap-2 rounded-lg border-[1px] border-gray-400 hover:border-red-400 mr-4 px-4 cursor-pointer">
                 <Icon icon="logos:tiktok-icon" />
                 <span>Tiktok</span>
               </div>

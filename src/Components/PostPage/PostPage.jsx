@@ -638,8 +638,6 @@ const PostPage = () => {
 
                         // Create a file object to use with gapi
                         const file = new File([videoFile], "Template-videoSmall.mp4", { type: "video/mp4" });
-                        console.log("jay File==>", file)
-                        console.log("jay metadata==>", metadata)
 
                         // Use gapi client library to insert the video
                         const request = gapi.client.youtube.videos.insert({
@@ -682,7 +680,7 @@ const PostPage = () => {
     };
 
     const handleScheduleClick = () => {
-        console.log("Scheduled Time:", scheduledTime); // Debugging log
+        console.log("Scheduled Time:", scheduledTime);
         if (!scheduledTime || isNaN(new Date(scheduledTime).getTime())) {
             alert("Please select a valid scheduled time.");
             return;
@@ -695,9 +693,6 @@ const PostPage = () => {
 
         setLoading(true);
 
-        // Calculate delay based on the scheduled time
-        const delay = new Date(scheduledTime).getTime() - new Date().getTime();
-
         if (delay <= 0) {
             alert("Scheduled time must be in the future.");
             setLoading(false);
@@ -709,6 +704,9 @@ const PostPage = () => {
             alert(`Your post for ${account.page?.name} has been scheduled for ${new Date(scheduledTime).toLocaleString()}`);
             navigate('/')
         });
+
+        // Calculate delay based on the scheduled time
+        const delay = new Date(scheduledTime).getTime() - new Date().getTime();
 
         // Schedule the publish logic for all accounts
         setTimeout(() => {

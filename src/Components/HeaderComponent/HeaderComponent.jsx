@@ -9,6 +9,7 @@ const HeaderComponent = () => {
     const { user, setUser, setAccessToken, setUserPages } = useContext(AppContext);
 
     const CONFIGURATION_ID = "1839322333474319"; // Replace with your actual Configuration ID
+    const AppId = "1144156470487645";
 
     useEffect(() => {
         if (window.FB && window.FB.__initialized) {
@@ -19,7 +20,7 @@ const HeaderComponent = () => {
         // Initialize Facebook SDK
         window.fbAsyncInit = () => {
             window.FB.init({
-                appId: "1144156470487645", // Your App ID
+                appId: AppId, // Your App ID
                 cookie: true, // Enable cookies
                 xfbml: true, // Parse social plugins
                 version: "v21.0", // API version
