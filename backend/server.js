@@ -4,11 +4,16 @@ const express = require("express");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 
-
-
 const app = express();
+
+app.use(cors({
+    origin: "https://social-display.vercel.app",
+    credentials: true
+}));
+
 app.use(cookieParser());
-app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 const CLIENT_KEY = process.env.CLIENT_KEY;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
@@ -16,7 +21,7 @@ const REDIRECT_URI = process.env.REDIRECT_URI;
 
 app.get("/oauth", (req, res) => {
     const csrfState = Math.random().toString(36).substring(2);
-    res.cookie("csrfState", csrfState, { maxAge: 60000 });
+    res.cookie("csrfState", csrfState, { maxAge: 60000, httpOnly: true, secure: true, sameSite: 'none' });
 
     const url = `https://www.tiktok.com/v2/auth/authorize/?client_key=${CLIENT_KEY}&scope=user.info.basic&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${csrfState}`;
 
@@ -47,13 +52,14 @@ app.get("/auth/callback", async (req, res) => {
         });
 
         const tokenData = await tokenResponse.json();
-        if (tokenData.error) {
-            return res.status(400).json(tokenData);
+
+        if (!tokenResponse.ok) {
+            return res.status(tokenResponse.status).json({ error: tokenData });
         }
 
         res.json(tokenData);
     } catch (error) {
-        res.status(500).json({ error: "Failed to get access token" });
+        res.status(500).json({ error: "Failed to get access token", details: error.message });
     }
 });
 
